@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15G1004" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment version="1050" identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
     </dependencies>
     <objects>
@@ -107,31 +106,22 @@
                     <button id="451">
                         <rect key="frame" x="11" y="30" width="131" height="26"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <contentFilters>
-                            <ciFilter name="CIColorMonochrome">
-                                <configuration>
-                                    <ciColor key="inputColor" red="1" green="0.0" blue="0.0" alpha="1"/>
-                                    <null key="inputImage"/>
-                                    <real key="inputIntensity" value="1"/>
-                                </configuration>
-                            </ciFilter>
-                        </contentFilters>
                         <buttonCell key="cell" type="bevel" title="Disable MultiBoxOSX" bezelStyle="regularSquare" alignment="center" controlSize="small" scrollable="YES" lineBreakMode="clipping" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="452">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system" size="9"/>
+                            <font key="font" metaFont="miniSystem"/>
                         </buttonCell>
                         <connections>
                             <action selector="enableButton:" target="450" id="453"/>
                         </connections>
                     </button>
                     <levelIndicator verticalHuggingPriority="750" id="olD-Ki-yRV">
-                        <rect key="frame" x="16" y="13" width="120" height="18"/>
+                        <rect key="frame" x="13" y="13" width="127" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                         <levelIndicatorCell key="cell" controlSize="small" alignment="left" maxValue="5" warningValue="4" criticalValue="4" id="ZK4-16-tQc"/>
                     </levelIndicator>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="-119" y="314.5"/>
+            <point key="canvasLocation" x="77" y="89.5"/>
         </window>
         <customObject id="420" customClass="NSFontManager"/>
         <customObject id="450" customClass="MainController">
