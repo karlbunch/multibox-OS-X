@@ -24,6 +24,9 @@
 
 #import <Cocoa/Cocoa.h>
 
+// Application Name we will target
+#define MULTIBOXOSX_TARGET_APPLICATION @"World of Warcraft"
+
 #define MULTIBOXOSX_FORWARD_MOUSE 0  // Not sure if these even work, if you enable you will need to fix it!
 
 @interface MainController : NSObject<NSApplicationDelegate> {
@@ -42,7 +45,11 @@
     
 	BOOL ignoreEvents;
     int numTargets;
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
 	ProcessSerialNumber lastFrontPSN;
+#else // MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
+    NSMutableDictionary *pidFocused;
+#endif // MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
 }
 
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event;
@@ -51,11 +58,14 @@
 #endif // MULTIBOXOSX_FORWARD_MOUSE
 - (void) setUpEventTaps;
 - (void) shutDownEventTaps;
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
 - (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn;
 //- (void) cycleThroughProcesses;
 
 // returns YES if this PSN belongs to an application that we should target
 - (BOOL) isTargetProcessWithPSN:(ProcessSerialNumber *)psn;
+#endif // MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
 
 // taken from clone keys
 - (void) focusFirstWindowOfPid:(pid_t)pid;

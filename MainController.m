@@ -44,6 +44,92 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     [mainWindow setMovableByWindowBackground:YES];
 }
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
+- (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
+    numTargets = 0;
+
+    NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
+
+    NSLog(@"currentApp=[%@]", (NSString *)[currentApp objectForKey:@"NSApplicationName"]);
+    
+    if(![(NSString *)[currentApp objectForKey:@"NSApplicationName"] isEqualToString:MULTIBOXOSX_TARGET_APPLICATION]) {
+        return event;
+    }
+
+    numTargets = 1;
+    
+    // check for special keys and ignored keys
+    if (type == kCGEventKeyDown) {
+        CGKeyCode keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        NSString *eventString = [self stringFromEvent:event];
+        NSLog(@"key=[%@] code=%d", eventString, keycode);
+        
+        if (keycode == 113) { // PAUSE/BREAK KEY
+            ignoreEvents = !ignoreEvents;
+            [self updateUI];
+            return event;
+        }
+        
+        if (eventString.length == 1) {
+            char c = (char) [eventString characterAtIndex:0];
+            switch (c) {
+                    /*                case '#': // Toggle Event Forwarding
+                     ignoreEvents = !ignoreEvents;
+                     [self updateUI];
+                     return event;
+                     break;
+                     */
+                case 'w': // Ignore movement keys
+                case 'a':
+                case 's':
+                case 'd':
+                    return event;
+                    break;
+            }
+        }
+    }
+    
+    if (ignoreEvents) {
+        [pidFocused dealloc];
+        pidFocused = NULL;
+        return event;
+    }
+    
+    if (pidFocused == NULL)
+        pidFocused = [[NSMutableDictionary alloc] init];
+    
+    NSArray *appNames = [[NSWorkspace sharedWorkspace] runningApplications];
+    NSDate *startTime = [NSDate date];
+    
+    for (NSRunningApplication *thisApp in appNames) {
+        // Avoid double "echo" effect, don't send to the active application
+        if (thisApp.isActive)
+            continue;
+
+        // Only forward to the target applications
+        if(![thisApp.localizedName isEqualToString:MULTIBOXOSX_TARGET_APPLICATION])
+            continue;
+        
+        numTargets++;
+        
+        pid_t thisPID = [thisApp processIdentifier];
+        
+        NSLog(@"thisPID = %u", thisPID);
+        
+        if (![pidFocused objectForKey:@(thisPID)]) {
+            NSLog(@"focusing pid %d", thisPID);
+            [self focusFirstWindowOfPid:thisPID];
+            [pidFocused setObject:@(TRUE) forKey:@(thisPID)];
+        }
+        CGEventPostToPid([thisApp processIdentifier], event);
+    }
+
+    NSTimeInterval delta = [startTime timeIntervalSinceNow] * -1.0;
+    NSLog(@"processing lag: %f", delta);
+    [self updateUI];
+    return event;
+}
+#else // MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
     numTargets = 0;
     ProcessSerialNumber frontPSN;
@@ -132,6 +218,7 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     [self updateUI];
     return event;
 }
+#endif // MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
 
 #if MULTIBOXOSX_FORWARD_MOUSE
 - (CGEventRef) tapMouseCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
@@ -157,6 +244,21 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
         }
     }
     return event;
+}
+
+- (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn {
+    NSString *pn = nil;
+    OSStatus st = CopyProcessName(psn, (CFStringRef *) &pn);
+    if (st) {
+        NSLog(@"%s could not get process name", __FUNCTION__);
+    }
+    return pn;
+}
+
+- (BOOL) isTargetProcessWithPSN:(ProcessSerialNumber *)psn {
+    NSString *pn = [self processNameFromPSN:psn];
+    return [pn isEqual:MULTIBOXOSX_TARGET_APPLICATION];
+    //return [pn isEqual:@"TextEdit"];
 }
 #endif // MULTIBOXOSX_FORWARD_MOUSE
 
@@ -197,21 +299,6 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
         CFRelease(machPortMouse);
     }
 #endif // MULTIBOXOSX_FORWARD_MOUSE
-}
-
-- (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn {
-    NSString *pn = nil;
-    OSStatus st = CopyProcessName(psn, (CFStringRef *) &pn);
-    if (st) {
-        NSLog(@"%s could not get process name", __FUNCTION__);
-    }
-    return pn;
-}
-
-- (BOOL) isTargetProcessWithPSN:(ProcessSerialNumber *)psn {
-    NSString *pn = [self processNameFromPSN:psn];
-    return [pn isEqual:@"World of Warcraft"];
-    //return [pn isEqual:@"TextEdit"];
 }
 
 // taken from clone keys
