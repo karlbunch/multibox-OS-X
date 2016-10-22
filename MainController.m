@@ -4,6 +4,7 @@
 //
 //  Created by dirk on 4/25/09.
 //  Copyright 2009 Dirk Zimmermann. All rights reserved.
+//  Copyright 2016 Karl Bunch.
 //
 
 // Multibox-OS-X is free software: you can redistribute it and/or modify
@@ -24,280 +25,275 @@
 #import "MainController.h"
 
 CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-	MainController *mc = (MainController *) refcon;
-	return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
+    MainController *mc = (MainController *) refcon;
+    return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
 }
-
+#if MULTIBOXOSX_FORWARD_MOUSE
 CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-	MainController *mc = (MainController *) refcon;
-	return [mc tapMouseCallbackWithProxy:proxy type:type event:event];
+    MainController *mc = (MainController *) refcon;
+    return [mc tapMouseCallbackWithProxy:proxy type:type event:event];
 }
+#endif // MULTIBOXOSX_FORWARD_MOUSE
 
 @implementation MainController
 
 - (void) awakeFromNib {
-	[NSApplication sharedApplication].delegate = self;
-	[self setUpEventTaps];
-	[self updateUI];
-	//[self cycleThroughProcesses];
+    [NSApplication sharedApplication].delegate = self;
+    [self setUpEventTaps];
+    [self updateUI];
+    [mainWindow setMovableByWindowBackground:YES];
 }
 
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
-	//NSLog(@"tapCallbackWithProxy");
-	ProcessSerialNumber current;
-	OSErr err = GetFrontProcess(&current);
-	if (!err) {
-		//NSLog(@"foreground psn %ld,%ld", current.highLongOfPSN, current.lowLongOfPSN);
-		if ([self shouldTemperWithPSN:&current]) {
-			//NSLog(@"foreground app should be tempered with");
-			
-			NSString *eventString = nil;
-			// check for ignore key
-			if (type == kCGEventKeyDown) {
-				eventString = [self stringFromEvent:event];
-				//NSLog(@"string %@", eventString);
-				if ([eventString isEqual:@"#"]) {
-					ignoreEvents = !ignoreEvents;
-					[self updateUI];
-				}
-				//CGEventField field = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-				//NSLog(@"keycode %d", field);
-			}
-			
-			//NSLog(@"ignoreEvents %d in instance %@", ignoreEvents, self);
-			if (!ignoreEvents) {
-				ProcessSerialNumber psn = { 0, kNoProcess };
-				err = 0;
-				while ((err = GetNextProcess(&psn)) != procNotFound) {
-					Boolean same;
-					SameProcess(&psn, &current, &same);
-					//NSLog(@"%@ same %d", pn, same);
-					if (!same) {
-						if ([self shouldTemperWithPSN:&psn]) {
-							SameProcess(&psn, &lastFrontPsn, &same);
-							if (!same) {
-								pid_t cur_pid;
-								GetProcessPID(&psn, &cur_pid);
-								//NSLog(@"focusing %d", cur_pid);
-								[self focusFirstWindowOfPid:cur_pid];
-								lastFrontPsn = psn;
-							}
-							
-							// basic macro ability
-							// stop follow
-							/*
-							if (type == kCGEventKeyDown) {
-								NSString *eventString = [self stringFromEvent:event];
-								if ([eventString isEqual:@"r"]) {
-									//NSLog(@"attack");
-									// arrow down is 125
-									CGEventRef ev1 = CGEventCreateKeyboardEvent(NULL, (CGKeyCode) 125, YES);
-									CGEventPostToPSN(&psn, ev1);
-									CGEventRef ev2 = CGEventCreateKeyboardEvent(NULL, (CGKeyCode) 125, NO);
-									CGEventPostToPSN(&psn, ev2);
-									CFRelease(ev1);
-									CFRelease(ev2);
-								}
-							}
-							*/
-							//NSString *pn = [self processNameFromPSN:&psn];
-							//NSLog(@"copy to %@", pn);
-							
-							// ignore movement keys
-							BOOL ignoreThisEvent = NO;
-							if (eventString && eventString.length == 1) {
-								char c = (char) [eventString characterAtIndex:0];
-								switch (c) {
-									case 'e':
-									case 'd':
-									case 's':
-									case 'f':
-										ignoreThisEvent = YES;
-										//NSLog(@"ignored key %c", c);
-										break;
-									default:
-										break;
-								}
-							}
-							if (!ignoreThisEvent) {
-								CGEventPostToPSN(&psn, event);
-							}
-						}
-					}
-				}
-			}
-		}
-		/*
-		 NSLog(@"psn %ld,%ld", current.highLongOfPSN, current.lowLongOfPSN);
-		 NSString *pn = [self processNameFromPSN:&current];
-		 if (pn) {
-		 NSLog(@"foreground process %@", pn);
-		 }
-		 */
-	} else {
-		NSLog(@"could not determine current process");
-	}
-	
-	return event;
+    numTargets = 0;
+    ProcessSerialNumber frontPSN;
+    OSErr err = GetFrontProcess(&frontPSN);
+    
+    if (err) {
+        NSLog(@"could not determine current process");
+        return event;
+    }
+    
+    if (![self isTargetProcessWithPSN:&frontPSN]) {
+        return event;
+    }
+    
+    NSLog(@"%u,%u target in foreground", (unsigned int)frontPSN.highLongOfPSN, (unsigned int)frontPSN.lowLongOfPSN);
+    
+    numTargets = 1;
+    
+    // check for special keys and ignored keys
+    if (type == kCGEventKeyDown) {
+        CGKeyCode keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+        NSString *eventString = [self stringFromEvent:event];
+        NSLog(@"key=[%@] code=%d", eventString, keycode);
+
+        if (keycode == 113) { // PAUSE/BREAK KEY
+            ignoreEvents = !ignoreEvents;
+            [self updateUI];
+            return event;
+        }
+        
+        if (eventString.length == 1) {
+            char c = (char) [eventString characterAtIndex:0];
+            switch (c) {
+/*                case '#': // Toggle Event Forwarding
+                    ignoreEvents = !ignoreEvents;
+                    [self updateUI];
+                    return event;
+                    break;
+*/
+                case 'w': // Ignore movement keys
+                case 'a':
+                case 's':
+                case 'd':
+                    return event;
+                    break;
+            }
+        }
+    }
+
+    if (ignoreEvents) {
+        return event;
+    }
+    
+    NSDate *startTime = [NSDate date];
+    ProcessSerialNumber nextPSN = { 0, kNoProcess };
+    while (GetNextProcess(&nextPSN) != procNotFound) {
+        Boolean same;
+        
+        // Same as the current process?
+        SameProcess(&nextPSN, &frontPSN, &same);
+        
+        // Skip if same as foreground or if this process isn't a target
+        if (same || ![self isTargetProcessWithPSN:&nextPSN]) {
+            continue;
+        }
+        
+        //NSLog(@"%u,%u target in background", (unsigned int)frontPSN.highLongOfPSN, (unsigned int)frontPSN.lowLongOfPSN);
+        numTargets++;
+        
+        // Have we already focused the first window of this process?
+        SameProcess(&nextPSN, &lastFrontPSN, &same);
+        if (!same) {
+            NSLog(@"%u,%u foucsFirstWindow", (unsigned int)nextPSN.highLongOfPSN, (unsigned int)nextPSN.lowLongOfPSN);
+            pid_t cur_pid;
+            GetProcessPID(&nextPSN, &cur_pid);
+            NSLog(@"focusing pid %d", cur_pid);
+            [self focusFirstWindowOfPid:cur_pid];
+            lastFrontPSN = nextPSN;
+        }
+
+        CGEventPostToPSN(&nextPSN, event);
+    }
+
+    NSTimeInterval delta = [startTime timeIntervalSinceNow] * -1.0;
+    NSLog(@"processing lag: %f", delta);
+    [self updateUI];
+    return event;
 }
 
+#if MULTIBOXOSX_FORWARD_MOUSE
 - (CGEventRef) tapMouseCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
-	ProcessSerialNumber current;
-	OSErr err = GetFrontProcess(&current);
-	ProcessSerialNumber psn = { 0, kNoProcess };
-	err = 0;
-	while ((err = GetNextProcess(&psn)) != procNotFound) {
-		Boolean same;
-		SameProcess(&psn, &current, &same);
-		//NSLog(@"%@ same %d", pn, same);
-		if (!same) {
-			if ([self shouldTemperWithPSN:&psn]) {
-				SameProcess(&psn, &lastFrontPsn, &same);
-				if (!same) {
-					pid_t cur_pid;
-					GetProcessPID(&psn, &cur_pid);
-					//NSLog(@"mouse focusing %d", cur_pid);
-					[self focusFirstWindowOfPid:cur_pid];
-					lastFrontPsn = psn;
-				}
-			}
-		}
-	}
-	return event;
+    ProcessSerialNumber current;
+    OSErr err = GetFrontProcess(&current);
+    ProcessSerialNumber psn = { 0, kNoProcess };
+    err = 0;
+    while ((err = GetNextProcess(&psn)) != procNotFound) {
+        Boolean same;
+        SameProcess(&psn, &current, &same);
+        //NSLog(@"%@ same %d", pn, same);
+        if (!same) {
+            if ([self isTargetProcessWithPSN:&psn]) {
+                SameProcess(&psn, &lastFrontPSN, &same);
+                if (!same) {
+                    pid_t cur_pid;
+                    GetProcessPID(&psn, &cur_pid);
+                    //NSLog(@"mouse focusing %d", cur_pid);
+                    [self focusFirstWindowOfPid:cur_pid];
+                    lastFrontPSN = psn;
+                }
+            }
+        }
+    }
+    return event;
 }
+#endif // MULTIBOXOSX_FORWARD_MOUSE
 
 - (void) setUpEventTaps {
-	CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
-	//| CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) | CGEventMaskBit(kCGEventOtherMouseDown);
-	machPortKeyboard = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
-								maskKeyboard, MyKeyboardEventTapCallBack, self);
-	machPortRunLoopSourceRefKeyboard = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortKeyboard, 0);
-	CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
+    CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
 
-	CGEventMask maskMouse = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) |
-	CGEventMaskBit(kCGEventOtherMouseDown);
-	machPortMouse = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
-										maskMouse, MyMouseEventTapCallBack, self);
-	machPortRunLoopSourceRefMouse = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortMouse, 0);
-	CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
+    machPortKeyboard = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
+                                        maskKeyboard, MyKeyboardEventTapCallBack, self);
+
+    machPortRunLoopSourceRefKeyboard = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortKeyboard, 0);
+
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
+
+#if MULTIBOXOSX_FORWARD_MOUSE
+    CGEventMask maskMouse = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) |
+    CGEventMaskBit(kCGEventOtherMouseDown);
+    machPortMouse = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
+                                     maskMouse, MyMouseEventTapCallBack, self);
+    machPortRunLoopSourceRefMouse = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortMouse, 0);
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
+#endif // MULTIBOXOSX_FORWARD_MOUSE
 }
 
 - (void) shutDownEventTaps {
-	if (machPortRunLoopSourceRefKeyboard) {
-		CFRunLoopRemoveSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
-		CFRelease(machPortRunLoopSourceRefKeyboard);
-	}
-	if (machPortKeyboard) {
-		CFRelease(machPortKeyboard);
-	}
-	if (machPortRunLoopSourceRefMouse) {
-		CFRunLoopRemoveSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
-		CFRelease(machPortRunLoopSourceRefMouse);
-	}
-	if (machPortMouse) {
-		CFRelease(machPortMouse);
-	}
+    if (machPortRunLoopSourceRefKeyboard) {
+        CFRunLoopRemoveSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
+        CFRelease(machPortRunLoopSourceRefKeyboard);
+    }
+    if (machPortKeyboard) {
+        CFRelease(machPortKeyboard);
+    }
+#if MULTIBOXOSX_FORWARD_MOUSE
+    if (machPortRunLoopSourceRefMouse) {
+        CFRunLoopRemoveSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
+        CFRelease(machPortRunLoopSourceRefMouse);
+    }
+    if (machPortMouse) {
+        CFRelease(machPortMouse);
+    }
+#endif // MULTIBOXOSX_FORWARD_MOUSE
 }
 
 - (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn {
-	NSString *pn = nil;
-	OSStatus st = CopyProcessName(psn, (CFStringRef *) &pn);
-	if (st) {
-		NSLog(@"%s could not get process name", __FUNCTION__);
-	}
-	return pn;
+    NSString *pn = nil;
+    OSStatus st = CopyProcessName(psn, (CFStringRef *) &pn);
+    if (st) {
+        NSLog(@"%s could not get process name", __FUNCTION__);
+    }
+    return pn;
 }
 
-/*
-- (void) cycleThroughProcesses {
-	ProcessSerialNumber psn = { 0, kNoProcess };
-	OSErr err = 0;
-	while ((err = GetNextProcess(&psn)) != procNotFound) {
-		NSString *pn = [self processNameFromPSN:&psn];
-		NSLog(@"process %@", pn);
-	}
-}
- */
-
-- (BOOL) shouldTemperWithPSN:(ProcessSerialNumber *)psn {
-	NSString *pn = [self processNameFromPSN:psn];
-	return [pn isEqual:@"World of Warcraft"];
-	//return [pn isEqual:@"TextEdit"];
+- (BOOL) isTargetProcessWithPSN:(ProcessSerialNumber *)psn {
+    NSString *pn = [self processNameFromPSN:psn];
+    return [pn isEqual:@"World of Warcraft"];
+    //return [pn isEqual:@"TextEdit"];
 }
 
 // taken from clone keys
 - (void) focusFirstWindowOfPid:(pid_t)pid {
-	AXUIElementRef appRef = AXUIElementCreateApplication(pid);
-	
-	CFArrayRef winRefs;
-	AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute, 0, 255, &winRefs);
-	if (!winRefs) return;
-	
-	for (int i = 0; i < CFArrayGetCount(winRefs); i++) {
-		AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, i);
-		CFStringRef titleRef = NULL;
-		AXUIElementCopyAttributeValue( winRef, kAXTitleAttribute, (const void**)&titleRef);
-		
-		char buf[1024];
-		buf[0] = '\0';
-		if (!titleRef) {
-			strcpy(buf, "null");
-		}
-		if (!CFStringGetCString(titleRef, buf, 1023, kCFStringEncodingUTF8)) return;
-		CFRelease(titleRef);
-		
-		if (strlen(buf) != 0) {
-			AXError result = AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
-			// CFRelease(winRef);
-			// syslog(LOG_NOTICE, "result %d of setting window %s focus of pid %d", result, buf, pid);
-			if (result != 0) {
-				// syslog(LOG_NOTICE, "result %d of setting window %s focus of pid %d", result, buf, pid);
-			}
-			break;
-		}
-		else {
-			// syslog(LOG_NOTICE, "Skipping setting window %s focus of pid %d", buf, pid);
-		}
-	}
-	
-	AXUIElementSetAttributeValue(appRef, kAXFocusedApplicationAttribute, kCFBooleanTrue);
-	
-	CFRelease(winRefs);
-	CFRelease(appRef);
+    AXUIElementRef appRef = AXUIElementCreateApplication(pid);
+    
+    CFArrayRef winRefs;
+    AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute, 0, 255, &winRefs);
+    if (!winRefs) return;
+    
+    for (int i = 0; i < CFArrayGetCount(winRefs); i++) {
+        AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, i);
+        CFStringRef titleRef = NULL;
+        AXUIElementCopyAttributeValue( winRef, kAXTitleAttribute, (const void**)&titleRef);
+        
+        char buf[1024];
+        buf[0] = '\0';
+        if (!titleRef) {
+            strcpy(buf, "null");
+        }
+        if (!CFStringGetCString(titleRef, buf, 1023, kCFStringEncodingUTF8)) return;
+        
+        if (titleRef != NULL)
+            CFRelease(titleRef);
+        
+        if (strlen(buf) != 0) {
+            AXError result = AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
+            // CFRelease(winRef);
+            // syslog(LOG_NOTICE, "result %d of setting window %s focus of pid %d", result, buf, pid);
+            if (result != 0) {
+                // syslog(LOG_NOTICE, "result %d of setting window %s focus of pid %d", result, buf, pid);
+            }
+            break;
+        }
+        else {
+            // syslog(LOG_NOTICE, "Skipping setting window %s focus of pid %d", buf, pid);
+        }
+    }
+    
+    AXUIElementSetAttributeValue(appRef, kAXFocusedApplicationAttribute, kCFBooleanTrue);
+    
+    CFRelease(winRefs);
+    CFRelease(appRef);
 }
 
 - (void) updateUI {
-	if (ignoreEvents) {
-		toggleButton.title = @"Enable";
-		mainWindow.backgroundColor = [NSColor redColor];
-	} else {
-		toggleButton.title = @"Disable";
-		mainWindow.backgroundColor = [NSColor greenColor];
-	}
+    if (ignoreEvents) {
+        toggleButton.title = @"Enable MultiBoxOSX";
+        mainWindow.backgroundColor = [NSColor redColor];
+    } else {
+        toggleButton.title = @"Disable MultiBoxOSX";
+        [targetIndicator setDoubleValue:(double)(numTargets)];
+        if (numTargets > 1) {
+            mainWindow.backgroundColor = [NSColor greenColor];
+        } else {
+            mainWindow.backgroundColor = [NSColor yellowColor];
+        }
+    }
 }
 
 - (IBAction) enableButton:(id)sender {
-	ignoreEvents = !ignoreEvents;
-	[self updateUI];
+    ignoreEvents = !ignoreEvents;
+    [self updateUI];
 }
 
 - (NSString *) stringFromEvent:(CGEventRef)event {
-	UniCharCount stringLength = 32;
-	UniChar unicodeString[stringLength];
-	CGEventKeyboardGetUnicodeString(event, stringLength, &stringLength, unicodeString);
-	NSString *uni = [NSString stringWithCharacters:unicodeString length:stringLength];
-	return uni;
+    UniCharCount stringLength = 32;
+    UniChar unicodeString[stringLength];
+    CGEventKeyboardGetUnicodeString(event, stringLength, &stringLength, unicodeString);
+    NSString *uni = [NSString stringWithCharacters:unicodeString length:stringLength];
+    return uni;
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
-	NSLog(@"applicationShouldTerminate");
-	[self shutDownEventTaps];
-	return NSTerminateNow;
+    NSLog(@"applicationShouldTerminate");
+    [self shutDownEventTaps];
+    return NSTerminateNow;
 }
 
 - (void) dealloc {
-	NSLog(@"dealloc");
-	[super dealloc];
+    NSLog(@"dealloc");
+    [super dealloc];
 }
 
 @end
