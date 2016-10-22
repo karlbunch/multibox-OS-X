@@ -12,6 +12,7 @@
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = CBE052CB1DBBD81700D541E8 /* Credits.rtf */; };
 		CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */ = {isa = PBXBuildFile; fileRef = CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 		43CAA2000FAC32110026C6DD /* MainController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainController.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* MultiBoxOSX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultiBoxOSX.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CBE052CB1DBBD81700D541E8 /* Credits.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
 		CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = MultiBoxOSX.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -106,6 +108,7 @@
 				8D1107310486CEB800E47090 /* Info.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 				1DDD58140DA1D0A300B32029 /* MainMenu.xib */,
+				CBE052CB1DBBD81700D541E8 /* Credits.rtf */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -172,6 +175,7 @@
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
 				1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */,
 				CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */,
+				CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
