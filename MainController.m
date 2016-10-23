@@ -24,7 +24,7 @@
 
 #import "MainController.h"
 
-#ifndef DEBUG
+#if !DEBUG
 #define NSLog(...)
 #endif // DEBUG
 
@@ -53,8 +53,8 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     [self updateUI];
 }
 
-#if DEBUG
 - (void) applicationDidFinishLaunching:(NSNotification *)notification {
+#if DEBUG
     NSTextField *debugLabel;
     
     debugLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(120, 0, 40, 14)];
@@ -65,9 +65,45 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     [debugLabel setSelectable:NO];
     [debugLabel setDrawsBackground:NO];
     [[mainWindow contentView] addSubview:debugLabel];
-}
 #endif // DEBUG
+    NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
+    
+    // Install the notifications.
+    [center addObserver:self
+               selector:@selector(processAppplicationNotifications:)
+                   name:NSWorkspaceDidLaunchApplicationNotification
+                 object:nil
+     ];
 
+    [center addObserver:self
+               selector:@selector(processAppplicationNotifications:)
+                   name:NSWorkspaceDidTerminateApplicationNotification
+                 object:nil
+     ];
+}
+
+- (void)processAppplicationNotifications:(NSNotification *)notification
+{
+    if (![[[notification userInfo] objectForKey:@"NSApplicationName"] isEqualToString:MULTIBOXOSX_TARGET_APPLICATION])
+        return;
+
+    NSString *notificationName = [notification name];
+    
+    NSLog(@"%@: %@", notificationName, notification);
+    
+    if ([notificationName isEqualToString:NSWorkspaceDidLaunchApplicationNotification]) {
+        numTargets++;
+        autoExit = TRUE;
+    } else if ([notificationName isEqualToString:NSWorkspaceDidTerminateApplicationNotification]) {
+        numTargets--;
+        
+        if (autoExit && numTargets <= 0) {
+            [[NSApplication sharedApplication] terminate:self];
+        }
+    }
+    
+    [self updateUI];
+}
 
 - (void) checkAccessibility:(BOOL) promptUser {
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
@@ -348,38 +384,45 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
 - (void) focusFirstWindowOfPid:(pid_t)pid {
     AXUIElementRef appRef = AXUIElementCreateApplication(pid);
     
+    if (!appRef)
+        return;
+    
     CFArrayRef winRefs;
     AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute, 0, 255, &winRefs);
-    if (!winRefs) return;
+
+    if (!winRefs) {
+        CFRelease(appRef);
+        return;
+    }
     
+#if !DEBUG
     for (int i = 0; i < CFArrayGetCount(winRefs); i++) {
         AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, i);
         CFStringRef titleRef = NULL;
-        AXUIElementCopyAttributeValue( winRef, kAXTitleAttribute, (const void**)&titleRef);
+        AXUIElementCopyAttributeValue(winRef, kAXTitleAttribute, (const void**)&titleRef);
         
         char buf[1024];
         buf[0] = '\0';
-        if (!titleRef) {
-            strcpy(buf, "null");
-        }
-        if (!CFStringGetCString(titleRef, buf, 1023, kCFStringEncodingUTF8)) return;
+
+        if (!CFStringGetCString(titleRef, buf, 1023, kCFStringEncodingUTF8))
+            break;
         
         if (titleRef != NULL)
             CFRelease(titleRef);
-        
+
+        NSLog(@"focusFirstWindowOfPid(%d): Window #%d = [%s]", pid, i, buf);
+
         if (strlen(buf) != 0) {
-            AXError result = AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
-            // CFRelease(winRef);
-            // syslog(LOG_NOTICE, "result %d of setting window %s focus of pid %d", result, buf, pid);
-            if (result != 0) {
-                // syslog(LOG_NOTICE, "result %d of setting window %s focus of pid %d", result, buf, pid);
-            }
+            AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
             break;
         }
-        else {
-            // syslog(LOG_NOTICE, "Skipping setting window %s focus of pid %d", buf, pid);
-        }
     }
+#else // DEBUG
+    if (CFArrayGetCount(winRefs) >= 1) {
+        AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, 0);
+        AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
+    }
+#endif // DEBUG
     
     AXUIElementSetAttributeValue(appRef, kAXFocusedApplicationAttribute, kCFBooleanTrue);
     
@@ -414,11 +457,12 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
         [targetIndicator setDoubleValue:(double)(0)];
         mainWindow.backgroundColor = [NSColor redColor];
     } else {
-        toggleButton.title = @"Disable MultiBoxOSX";
         [targetIndicator setDoubleValue:(double)(numTargets)];
-        if (numTargets > 1) {
+        if (numTargets >= 1) {
+            toggleButton.title = @"Disable MultiBoxOSX";
             mainWindow.backgroundColor = [NSColor greenColor];
         } else {
+            toggleButton.title = [NSString stringWithFormat:@"Start %@", MULTIBOXOSX_TARGET_APPLICATION];
             mainWindow.backgroundColor = [NSColor yellowColor];
         }
     }

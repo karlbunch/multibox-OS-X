@@ -42,8 +42,9 @@
     CFMachPortRef machPortMouse;
 	CFRunLoopSourceRef machPortRunLoopSourceRefMouse;
 #endif // MULTIBOXOSX_FORWARD_MOUSE
-    
+
 	BOOL ignoreEvents;
+    BOOL autoExit;
     int numTargets;
     Boolean isTrusted;
 #if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
