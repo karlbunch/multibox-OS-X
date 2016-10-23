@@ -95,18 +95,18 @@
                 </menuItem>
             </items>
         </menu>
-        <window title="MultiBoxOsx" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="371">
-            <windowPositionMask key="initialPositionMask" leftStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="1440" y="981" width="152" height="69"/>
+        <window title="MultiBoxOsx" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" frameAutosaveName="MultiBoxOsxWin1" animationBehavior="default" id="371">
+            <windowPositionMask key="initialPositionMask" rightStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="1760" y="0.0" width="160" height="69"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1178"/>
             <view key="contentView" id="372">
-                <rect key="frame" x="0.0" y="0.0" width="152" height="69"/>
+                <rect key="frame" x="0.0" y="0.0" width="160" height="69"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <button id="451">
-                        <rect key="frame" x="11" y="30" width="131" height="26"/>
+                        <rect key="frame" x="13" y="30" width="135" height="26"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="bevel" title="Disable MultiBoxOSX" bezelStyle="regularSquare" alignment="center" controlSize="small" scrollable="YES" lineBreakMode="clipping" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="452">
+                        <buttonCell key="cell" type="bevel" title="MultiBoxOSX" bezelStyle="regularSquare" alignment="center" controlSize="small" scrollable="YES" lineBreakMode="clipping" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="452">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="miniSystem"/>
                         </buttonCell>
@@ -115,13 +115,13 @@
                         </connections>
                     </button>
                     <levelIndicator verticalHuggingPriority="750" id="olD-Ki-yRV">
-                        <rect key="frame" x="13" y="13" width="127" height="18"/>
+                        <rect key="frame" x="15" y="13" width="131" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
                         <levelIndicatorCell key="cell" controlSize="small" alignment="left" maxValue="5" warningValue="4" criticalValue="4" id="ZK4-16-tQc"/>
                     </levelIndicator>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="77" y="89.5"/>
+            <point key="canvasLocation" x="160" y="116.5"/>
         </window>
         <customObject id="420" customClass="NSFontManager"/>
         <customObject id="450" customClass="MainController">

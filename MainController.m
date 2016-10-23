@@ -24,6 +24,10 @@
 
 #import "MainController.h"
 
+#ifndef DEBUG
+#define NSLog(...)
+#endif // DEBUG
+
 CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
     MainController *mc = (MainController *) refcon;
     return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
@@ -39,9 +43,40 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
 
 - (void) awakeFromNib {
     [NSApplication sharedApplication].delegate = self;
-    [self setUpEventTaps];
-    [self updateUI];
     [mainWindow setMovableByWindowBackground:YES];
+    isTrusted = FALSE;
+    [self checkAccessibility:YES];
+
+    if (isTrusted)
+        [self setUpEventTaps];
+
+    [self updateUI];
+}
+
+#if DEBUG
+- (void) applicationDidFinishLaunching:(NSNotification *)notification {
+    NSTextField *debugLabel;
+    
+    debugLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(120, 0, 40, 14)];
+    [debugLabel setStringValue:@"DEBUG"];
+    [debugLabel setFont:[NSFont systemFontOfSize:9]];
+    [debugLabel setBezeled:NO];
+    [debugLabel setEditable:NO];
+    [debugLabel setSelectable:NO];
+    [debugLabel setDrawsBackground:NO];
+    [[mainWindow contentView] addSubview:debugLabel];
+}
+#endif // DEBUG
+
+
+- (void) checkAccessibility:(BOOL) promptUser {
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+    NSDictionary *trustOptions = @{(__bridge id)kAXTrustedCheckOptionPrompt: (promptUser ? @YES : @NO)};
+    isTrusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)trustOptions);
+#else // MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+    isTrusted = AXIsProcessTrusted();
+#endif // MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
+    NSLog(@"checkAccessibility = %hhu", isTrusted);
 }
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
@@ -49,10 +84,11 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     numTargets = 0;
 
     NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
-
-    NSLog(@"currentApp=[%@]", (NSString *)[currentApp objectForKey:@"NSApplicationName"]);
+    NSString *currentAppName = (NSString *)[currentApp objectForKey:@"NSApplicationName"];
     
-    if(![(NSString *)[currentApp objectForKey:@"NSApplicationName"] isEqualToString:MULTIBOXOSX_TARGET_APPLICATION]) {
+    NSLog(@"currentApp=[%@]", currentAppName);
+    
+    if(![currentAppName isEqualToString:MULTIBOXOSX_TARGET_APPLICATION]) {
         return event;
     }
 
@@ -99,7 +135,10 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
         pidFocused = [[NSMutableDictionary alloc] init];
     
     NSArray *appNames = [[NSWorkspace sharedWorkspace] runningApplications];
+
+#if DEBUG
     NSDate *startTime = [NSDate date];
+#endif // DEBUG
     
     for (NSRunningApplication *thisApp in appNames) {
         // Avoid double "echo" effect, don't send to the active application
@@ -124,8 +163,11 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
         CGEventPostToPid([thisApp processIdentifier], event);
     }
 
+#if DEBUG
     NSTimeInterval delta = [startTime timeIntervalSinceNow] * -1.0;
     NSLog(@"processing lag: %f", delta);
+#endif
+
     [self updateUI];
     return event;
 }
@@ -280,6 +322,7 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     machPortRunLoopSourceRefMouse = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortMouse, 0);
     CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
 #endif // MULTIBOXOSX_FORWARD_MOUSE
+    NSLog(@"setupEventTaps ran");
 }
 
 - (void) shutDownEventTaps {
@@ -345,8 +388,30 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
 }
 
 - (void) updateUI {
+    if (!isTrusted) {
+        [self checkAccessibility:NO];
+        
+        if (!isTrusted) {
+            toggleButton.title = @"First Enable Accessibility!";
+            mainWindow.backgroundColor = [NSColor purpleColor];
+            // TODO: Can we detect when we get trusted via: AXObserverAddNotification ?
+            // http://stackoverflow.com/questions/853833/how-can-my-app-detect-a-change-to-another-apps-window
+            
+            // Check every 1 second until we have been trusted
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1ull * NSEC_PER_SEC)), dispatch_get_main_queue(), ^(void){
+                NSLog(@"timer updateUI");
+                [self updateUI];
+            });
+            return;
+        }
+        
+        if (isTrusted)
+            [self setUpEventTaps];
+    }
+    
     if (ignoreEvents) {
         toggleButton.title = @"Enable MultiBoxOSX";
+        [targetIndicator setDoubleValue:(double)(0)];
         mainWindow.backgroundColor = [NSColor redColor];
     } else {
         toggleButton.title = @"Disable MultiBoxOSX";
