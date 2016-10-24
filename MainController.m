@@ -38,13 +38,6 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 - (void) awakeFromNib {
     [NSApplication sharedApplication].delegate = self;
     [mainWindow setMovableByWindowBackground:YES];
-    isTrusted = FALSE;
-    [self checkAccessibility:YES];
-
-    if (isTrusted)
-        [self setUpEventTaps];
-
-    [self updateUI];
 }
 
 - (void) applicationDidFinishLaunching:(NSNotification *)notification {
@@ -62,7 +55,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 #endif // DEBUG
     NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
     
-    // Install the notifications.
+    // Listen for Application Launch/Terminations
     [center addObserver:self
                selector:@selector(processAppplicationNotifications:)
                    name:NSWorkspaceDidLaunchApplicationNotification
@@ -74,6 +67,17 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
                    name:NSWorkspaceDidTerminateApplicationNotification
                  object:nil
      ];
+
+    // Initialize Application
+    pidFocused = [[NSMutableDictionary alloc] init];
+
+    isTrusted = FALSE;
+    [self checkAccessibility:YES];
+    
+    if (isTrusted)
+        [self setUpEventTaps];
+    
+    [self updateUI];
 }
 
 - (void)processAppplicationNotifications:(NSNotification *)notification
@@ -155,9 +159,6 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         pidFocused = NULL;
         return event;
     }
-    
-    if (pidFocused == NULL)
-        pidFocused = [[NSMutableDictionary alloc] init];
     
     NSArray *appNames = [[NSWorkspace sharedWorkspace] runningApplications];
 
