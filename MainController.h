@@ -40,24 +40,12 @@
     BOOL autoExit;
     int numTargets;
     Boolean isTrusted;
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
-	ProcessSerialNumber lastFrontPSN;
-#else // MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
     NSMutableDictionary *pidFocused;
-#endif // MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
 }
 
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event;
 - (void) setUpEventTaps;
 - (void) shutDownEventTaps;
-
-#if MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
-- (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn;
-//- (void) cycleThroughProcesses;
-
-// returns YES if this PSN belongs to an application that we should target
-- (BOOL) isTargetProcessWithPSN:(ProcessSerialNumber *)psn;
-#endif // MAC_OS_X_VERSION_MIN_REQUIRED <= MAC_OS_X_VERSION_10_8
 
 // taken from clone keys
 - (void) focusFirstWindowOfPid:(pid_t)pid;

@@ -100,16 +100,11 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 }
 
 - (void) checkAccessibility:(BOOL) promptUser {
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
     NSDictionary *trustOptions = @{(__bridge id)kAXTrustedCheckOptionPrompt: (promptUser ? @YES : @NO)};
     isTrusted = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)trustOptions);
-#else // MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
-    isTrusted = AXIsProcessTrusted();
-#endif // MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
     NSLog(@"checkAccessibility = %hhu", isTrusted);
 }
 
-#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
     numTargets = 0;
 
@@ -201,111 +196,6 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     [self updateUI];
     return event;
 }
-#else // MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
-- (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
-    numTargets = 0;
-    ProcessSerialNumber frontPSN;
-    OSErr err = GetFrontProcess(&frontPSN);
-    
-    if (err) {
-        NSLog(@"could not determine current process");
-        return event;
-    }
-    
-    if (![self isTargetProcessWithPSN:&frontPSN]) {
-        return event;
-    }
-    
-    NSLog(@"%u,%u target in foreground", (unsigned int)frontPSN.highLongOfPSN, (unsigned int)frontPSN.lowLongOfPSN);
-    
-    numTargets = 1;
-    
-    // check for special keys and ignored keys
-    if (type == kCGEventKeyDown) {
-        CGKeyCode keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-        NSString *eventString = [self stringFromEvent:event];
-        NSLog(@"key=[%@] code=%d", eventString, keycode);
-
-        if (keycode == 113) { // PAUSE/BREAK KEY
-            ignoreEvents = !ignoreEvents;
-            [self updateUI];
-            return event;
-        }
-        
-        if (eventString.length == 1) {
-            char c = (char) [eventString characterAtIndex:0];
-            switch (c) {
-/*                case '#': // Toggle Event Forwarding
-                    ignoreEvents = !ignoreEvents;
-                    [self updateUI];
-                    return event;
-                    break;
-*/
-                case 'w': // Ignore movement keys
-                case 'a':
-                case 's':
-                case 'd':
-                    return event;
-                    break;
-            }
-        }
-    }
-
-    if (ignoreEvents) {
-        return event;
-    }
-    
-    NSDate *startTime = [NSDate date];
-    ProcessSerialNumber nextPSN = { 0, kNoProcess };
-    while (GetNextProcess(&nextPSN) != procNotFound) {
-        Boolean same;
-        
-        // Same as the current process?
-        SameProcess(&nextPSN, &frontPSN, &same);
-        
-        // Skip if same as foreground or if this process isn't a target
-        if (same || ![self isTargetProcessWithPSN:&nextPSN]) {
-            continue;
-        }
-        
-        //NSLog(@"%u,%u target in background", (unsigned int)frontPSN.highLongOfPSN, (unsigned int)frontPSN.lowLongOfPSN);
-        numTargets++;
-        
-        // Have we already focused the first window of this process?
-        SameProcess(&nextPSN, &lastFrontPSN, &same);
-        if (!same) {
-            NSLog(@"%u,%u foucsFirstWindow", (unsigned int)nextPSN.highLongOfPSN, (unsigned int)nextPSN.lowLongOfPSN);
-            pid_t cur_pid;
-            GetProcessPID(&nextPSN, &cur_pid);
-            NSLog(@"focusing pid %d", cur_pid);
-            [self focusFirstWindowOfPid:cur_pid];
-            lastFrontPSN = nextPSN;
-        }
-
-        CGEventPostToPSN(&nextPSN, event);
-    }
-
-    NSTimeInterval delta = [startTime timeIntervalSinceNow] * -1.0;
-    NSLog(@"processing lag: %f", delta);
-    [self updateUI];
-    return event;
-}
-
-- (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn {
-    NSString *pn = nil;
-    OSStatus st = CopyProcessName(psn, (CFStringRef *) &pn);
-    if (st) {
-        NSLog(@"%s could not get process name", __FUNCTION__);
-    }
-    return pn;
-}
-
-- (BOOL) isTargetProcessWithPSN:(ProcessSerialNumber *)psn {
-    NSString *pn = [self processNameFromPSN:psn];
-    return [pn isEqual:MULTIBOXOSX_TARGET_APPLICATION];
-    //return [pn isEqual:@"TextEdit"];
-}
-#endif // MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
 
 - (void) setUpEventTaps {
     CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
