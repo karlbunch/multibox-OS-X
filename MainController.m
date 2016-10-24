@@ -32,12 +32,6 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     MainController *mc = (MainController *) refcon;
     return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
 }
-#if MULTIBOXOSX_FORWARD_MOUSE
-CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-    MainController *mc = (MainController *) refcon;
-    return [mc tapMouseCallbackWithProxy:proxy type:type event:event];
-}
-#endif // MULTIBOXOSX_FORWARD_MOUSE
 
 @implementation MainController
 
@@ -296,33 +290,6 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     [self updateUI];
     return event;
 }
-#endif // MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
-
-#if MULTIBOXOSX_FORWARD_MOUSE
-- (CGEventRef) tapMouseCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event {
-    ProcessSerialNumber current;
-    OSErr err = GetFrontProcess(&current);
-    ProcessSerialNumber psn = { 0, kNoProcess };
-    err = 0;
-    while ((err = GetNextProcess(&psn)) != procNotFound) {
-        Boolean same;
-        SameProcess(&psn, &current, &same);
-        //NSLog(@"%@ same %d", pn, same);
-        if (!same) {
-            if ([self isTargetProcessWithPSN:&psn]) {
-                SameProcess(&psn, &lastFrontPSN, &same);
-                if (!same) {
-                    pid_t cur_pid;
-                    GetProcessPID(&psn, &cur_pid);
-                    //NSLog(@"mouse focusing %d", cur_pid);
-                    [self focusFirstWindowOfPid:cur_pid];
-                    lastFrontPSN = psn;
-                }
-            }
-        }
-    }
-    return event;
-}
 
 - (NSString *) processNameFromPSN:(ProcessSerialNumber *)psn {
     NSString *pn = nil;
@@ -338,7 +305,7 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     return [pn isEqual:MULTIBOXOSX_TARGET_APPLICATION];
     //return [pn isEqual:@"TextEdit"];
 }
-#endif // MULTIBOXOSX_FORWARD_MOUSE
+#endif // MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_9
 
 - (void) setUpEventTaps {
     CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
@@ -350,14 +317,6 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
 
     CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
 
-#if MULTIBOXOSX_FORWARD_MOUSE
-    CGEventMask maskMouse = CGEventMaskBit(kCGEventLeftMouseDown) | CGEventMaskBit(kCGEventRightMouseDown) |
-    CGEventMaskBit(kCGEventOtherMouseDown);
-    machPortMouse = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
-                                     maskMouse, MyMouseEventTapCallBack, self);
-    machPortRunLoopSourceRefMouse = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortMouse, 0);
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
-#endif // MULTIBOXOSX_FORWARD_MOUSE
     NSLog(@"setupEventTaps ran");
 }
 
@@ -369,15 +328,6 @@ CGEventRef MyMouseEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGE
     if (machPortKeyboard) {
         CFRelease(machPortKeyboard);
     }
-#if MULTIBOXOSX_FORWARD_MOUSE
-    if (machPortRunLoopSourceRefMouse) {
-        CFRunLoopRemoveSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefMouse, kCFRunLoopDefaultMode);
-        CFRelease(machPortRunLoopSourceRefMouse);
-    }
-    if (machPortMouse) {
-        CFRelease(machPortMouse);
-    }
-#endif // MULTIBOXOSX_FORWARD_MOUSE
 }
 
 // taken from clone keys

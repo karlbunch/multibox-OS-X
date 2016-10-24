@@ -27,8 +27,6 @@
 // Application Name we will target
 #define MULTIBOXOSX_TARGET_APPLICATION @"World of Warcraft"
 
-#define MULTIBOXOSX_FORWARD_MOUSE 0  // Not sure if these even work, if you enable you will need to fix it!
-
 @interface MainController : NSObject<NSApplicationDelegate> {
 
 	IBOutlet NSButton *toggleButton;
@@ -37,11 +35,6 @@
 
 	CFMachPortRef machPortKeyboard;
 	CFRunLoopSourceRef machPortRunLoopSourceRefKeyboard;
-
-#if MULTIBOXOSX_FORWARD_MOUSE
-    CFMachPortRef machPortMouse;
-	CFRunLoopSourceRef machPortRunLoopSourceRefMouse;
-#endif // MULTIBOXOSX_FORWARD_MOUSE
 
 	BOOL ignoreEvents;
     BOOL autoExit;
@@ -55,9 +48,6 @@
 }
 
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event;
-#if MULTIBOXOSX_FORWARD_MOUSE
-- (CGEventRef) tapMouseCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event;
-#endif // MULTIBOXOSX_FORWARD_MOUSE
 - (void) setUpEventTaps;
 - (void) shutDownEventTaps;
 
