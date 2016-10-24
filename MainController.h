@@ -38,9 +38,8 @@
 
 	BOOL ignoreEvents;
     BOOL autoExit;
-    int numTargets;
     Boolean isTrusted;
-    NSMutableDictionary *pidFocused;
+    NSDictionary *targetApps;
 }
 
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event;
