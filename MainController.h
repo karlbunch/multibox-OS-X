@@ -27,7 +27,7 @@
 // Default Application Name we will target
 #define MULTIBOXOSX_DEFAULT_TARGET_APPLICATION @"World of Warcraft"
 
-@interface MainController : NSObject<NSApplicationDelegate> {
+@interface MainController : NSObject <NSApplicationDelegate> {
 	IBOutlet NSWindow *mainWindow;
     IBOutlet NSButton *toggleButton;
     IBOutlet NSLevelIndicator *targetIndicator;
@@ -44,7 +44,7 @@
     NSString *targetAppPath;
 }
 
-- (IBAction) enableButtonClicked:(id)sender;
-- (IBAction) levelIndicatorClicked:(id)sender;
+- (IBAction)enableButtonClicked:(id)sender;
+- (IBAction)levelIndicatorClicked:(id)sender;
 
 @end
