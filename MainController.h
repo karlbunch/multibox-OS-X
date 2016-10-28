@@ -6,7 +6,7 @@
 //  Copyright 2009 Dirk Zimmermann. All rights reserved.
 //  Copyright 2016 Karl Bunch.
 //
-
+//
 // This file is part of Multibox-OS-X.
 //
 // Multibox-OS-X is free software: you can redistribute it and/or modify
@@ -40,9 +40,10 @@
     BOOL autoExit;
     int numPendingLaunch;
     NSDictionary *targetApps;
-    NSString *targetApplication;
-    NSString *targetAppPath;
 }
+
+@property (nonatomic, retain) NSString *targetApplication;
+@property (nonatomic, retain) NSString *targetAppPath;
 
 - (IBAction)enableButtonClicked:(id)sender;
 - (IBAction)levelIndicatorClicked:(id)sender;

@@ -6,7 +6,7 @@
 //  Copyright 2009 Dirk Zimmermann. All rights reserved.
 //  Copyright 2016 Karl Bunch.
 //
-
+//
 // Multibox-OS-X is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -37,23 +37,19 @@
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
-#if DEBUG
-    NSTextField *debugLabel;
+    // Setup Defaults
+    NSDictionary *defaultPreferences =
+    @{
+      @"targetApplication": @"World of Warcraft",
+      @"targetAppPath": @"/Applications/World of Warcraft/World of Warcraft.app",
+    };
 
-    debugLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(120, 0, 40, 14)];
-    [debugLabel setStringValue:@"DEBUG"];
-    [debugLabel setFont:[NSFont systemFontOfSize:9]];
-    [debugLabel setBezeled:NO];
-    [debugLabel setEditable:NO];
-    [debugLabel setSelectable:NO];
-    [debugLabel setDrawsBackground:NO];
-    [[mainWindow contentView] addSubview:debugLabel];
-#endif // DEBUG
-    [self readPreferences];
-
-    NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
+    [[NSUserDefaults standardUserDefaults] registerDefaults:defaultPreferences];
+    [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:defaultPreferences];
 
     // Listen for Application Launch/Terminations
+    NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
+
     [center addObserver:self
                selector:@selector(processAppplicationNotifications:)
                    name:NSWorkspaceDidLaunchApplicationNotification
@@ -79,10 +75,30 @@
     }
 
     [self updateUI];
+#if DEBUG
+    NSTextField *debugLabel;
+
+    debugLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(120, 0, 40, 14)];
+    [debugLabel setStringValue:@"DEBUG"];
+    [debugLabel setFont:[NSFont systemFontOfSize:9]];
+    [debugLabel setBezeled:NO];
+    [debugLabel setEditable:NO];
+    [debugLabel setSelectable:NO];
+    [debugLabel setDrawsBackground:NO];
+    [[mainWindow contentView] addSubview:debugLabel];
+#endif // DEBUG
+}
+
+- (NSString *)targetApplication {
+    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:@"targetApplication"];
+}
+
+- (NSString *)targetAppPath {
+    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:@"targetAppPath"];
 }
 
 - (void)processAppplicationNotifications:(NSNotification *)notification {
-    if (![[[notification userInfo] objectForKey:@"NSApplicationName"] isEqualToString:targetApplication]) {
+    if (![[[notification userInfo] objectForKey:@"NSApplicationName"] isEqualToString:self.targetApplication]) {
         return;
     }
 
@@ -136,7 +152,7 @@
 #endif // DEBUG
 
     for (NSRunningApplication *thisApp in appNames) {
-        if ([thisApp.localizedName isEqualToString:targetApplication]) {
+        if ([thisApp.localizedName isEqualToString:self.targetApplication]) {
             pid_t thisPID = [thisApp processIdentifier];
 
             NSLog(@"scanForTargets(): Found Target: pid = %u", thisPID);
@@ -165,44 +181,12 @@
     NSLog(@"checkAccessibility() isTrusted = %hhu", isTrusted);
 }
 
-- (void)readPreferences {
-    NSUserDefaults *preferences = [NSUserDefaults standardUserDefaults];
-
-    NSString *prefTargetApplication = [preferences objectForKey:@"targetApplication"];
-
-    if (prefTargetApplication == NULL || [prefTargetApplication length] == 0) {
-        prefTargetApplication = MULTIBOXOSX_DEFAULT_TARGET_APPLICATION;
-        NSLog(@"Setting targetApplication to default: %@", prefTargetApplication);
-    }
-
-    targetApplication = prefTargetApplication;
-
-    NSString *prefTargetAppPath = [preferences objectForKey:@"targetAppPath"];
-
-    if (prefTargetAppPath == NULL || [prefTargetAppPath length] == 0) {
-        prefTargetAppPath = [NSString stringWithFormat:@"/Applications/%@", prefTargetApplication];
-        NSLog(@"Setting targetAppPath to default: %@", prefTargetAppPath);
-    }
-
-    targetAppPath = prefTargetAppPath;
-
-    [self savePreferences];
-}
-
-- (void)savePreferences {
-    NSUserDefaults *preferences = [NSUserDefaults standardUserDefaults];
-
-    [preferences setObject:targetApplication forKey:@"targetApplication"];
-    [preferences setObject:targetAppPath forKey:@"targetAppPath"];
-    [preferences synchronize];
-}
-
 - (CGEventRef)tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)eventType event:(CGEventRef)event {
     NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
     NSNumber *currentAppProcessIdentifier = (NSNumber *)[currentApp objectForKey:@"NSApplicationProcessIdentifier"];
     NSString *currentAppName = (NSString *)[currentApp objectForKey:@"NSApplicationName"];
 
-    if (![currentAppName isEqualToString:targetApplication]) {
+    if (![currentAppName isEqualToString:self.targetApplication]) {
         return event;
     }
 
@@ -460,7 +444,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
             toggleButton.title = @"Disable MultiBoxOSX";
             mainWindow.backgroundColor = [NSColor greenColor];
         } else {
-            toggleButton.title = [NSString stringWithFormat:@"Start %@", targetApplication];
+            toggleButton.title = [NSString stringWithFormat:@"Start %@", self.targetApplication];
             mainWindow.backgroundColor = [NSColor yellowColor];
         }
     }
@@ -488,8 +472,10 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         numPendingLaunch = 1;
     }
 
-    if (numPendingLaunch > 0) {
+    while (numPendingLaunch > 0) {
         [self launchApplication];
+        numPendingLaunch--;
+        usleep(5000);
     }
 
     [bar setDoubleValue:(double)([targetApps count])];
@@ -500,7 +486,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         return;
     }
     
-    NSURL *appURL = [NSURL fileURLWithPath:targetAppPath];
+    NSURL *appURL = [NSURL fileURLWithPath:self.targetAppPath];
     NSMutableDictionary *appConfig = [[NSMutableDictionary alloc] init];
     NSRunningApplication *newApp = [[NSWorkspace sharedWorkspace] launchApplicationAtURL:appURL options:NSWorkspaceLaunchNewInstance configuration:appConfig error:nil];
 #pragma unused(newApp)
