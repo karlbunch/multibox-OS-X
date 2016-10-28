@@ -24,34 +24,27 @@
 
 #import <Cocoa/Cocoa.h>
 
-// Application Name we will target
-#define MULTIBOXOSX_TARGET_APPLICATION @"World of Warcraft"
+// Default Application Name we will target
+#define MULTIBOXOSX_DEFAULT_TARGET_APPLICATION @"World of Warcraft"
 
 @interface MainController : NSObject<NSApplicationDelegate> {
-
-	IBOutlet NSButton *toggleButton;
-    IBOutlet NSLevelIndicator *targetIndicator;
 	IBOutlet NSWindow *mainWindow;
+    IBOutlet NSButton *toggleButton;
+    IBOutlet NSLevelIndicator *targetIndicator;
 
 	CFMachPortRef machPortKeyboard;
 	CFRunLoopSourceRef machPortRunLoopSourceRefKeyboard;
 
+    Boolean isTrusted;
 	BOOL ignoreEvents;
     BOOL autoExit;
-    Boolean isTrusted;
+    int numPendingLaunch;
     NSDictionary *targetApps;
+    NSString *targetApplication;
+    NSString *targetAppPath;
 }
 
-- (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)type event:(CGEventRef)event;
-- (void) setUpEventTaps;
-- (void) shutDownEventTaps;
-
-// taken from clone keys
-- (void) focusFirstWindowOfPid:(pid_t)pid;
-
-- (NSString *) stringFromEvent:(CGEventRef)event;
-
-- (void) updateUI;
-- (IBAction) enableButton:(id)sender;
+- (IBAction) enableButtonClicked:(id)sender;
+- (IBAction) levelIndicatorClicked:(id)sender;
 
 @end

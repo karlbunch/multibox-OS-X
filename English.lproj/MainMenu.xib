@@ -111,17 +111,20 @@
                             <font key="font" metaFont="miniSystem"/>
                         </buttonCell>
                         <connections>
-                            <action selector="enableButton:" target="450" id="453"/>
+                            <action selector="enableButtonClicked:" target="450" id="UOZ-4H-WG8"/>
                         </connections>
                     </button>
                     <levelIndicator verticalHuggingPriority="750" id="olD-Ki-yRV">
                         <rect key="frame" x="15" y="13" width="131" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES"/>
-                        <levelIndicatorCell key="cell" controlSize="small" alignment="left" maxValue="5" warningValue="4" criticalValue="4" id="ZK4-16-tQc"/>
+                        <levelIndicatorCell key="cell" controlSize="small" editable="YES" alignment="left" maxValue="5" warningValue="4" criticalValue="4" id="ZK4-16-tQc"/>
+                        <connections>
+                            <action selector="levelIndicatorClicked:" target="450" id="WLq-PX-BEt"/>
+                        </connections>
                     </levelIndicator>
                 </subviews>
             </view>
-            <point key="canvasLocation" x="160" y="116.5"/>
+            <point key="canvasLocation" x="-218" y="128.5"/>
         </window>
         <customObject id="420" customClass="NSFontManager"/>
         <customObject id="450" customClass="MainController">

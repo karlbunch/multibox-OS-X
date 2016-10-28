@@ -28,16 +28,12 @@
 #define NSLog(...)
 #endif // DEBUG
 
-CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-    MainController *mc = (MainController *) refcon;
-    return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
-}
-
 @implementation MainController
 
 - (void) awakeFromNib {
     [NSApplication sharedApplication].delegate = self;
     [mainWindow setMovableByWindowBackground:YES];
+    [mainWindow setLevel:NSFloatingWindowLevel];
 }
 
 - (void) applicationDidFinishLaunching:(NSNotification *)notification {
@@ -53,6 +49,8 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     [debugLabel setDrawsBackground:NO];
     [[mainWindow contentView] addSubview:debugLabel];
 #endif // DEBUG
+    [self readPreferences];
+
     NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
 
     // Listen for Application Launch/Terminations
@@ -84,7 +82,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 
 - (void)processAppplicationNotifications:(NSNotification *)notification
 {
-    if (![[[notification userInfo] objectForKey:@"NSApplicationName"] isEqualToString:MULTIBOXOSX_TARGET_APPLICATION])
+    if (![[[notification userInfo] objectForKey:@"NSApplicationName"] isEqualToString:targetApplication])
         return;
 
     NSString *notificationName = [notification name];
@@ -103,6 +101,14 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         if ([targetApps count] > 0) {
             ignoreEvents = TRUE;
         }
+
+        [self positionAppWindowByPID:thisPID instanceNumber:[newTargets count]];
+
+        if (numPendingLaunch > 0)
+            numPendingLaunch--;
+
+        if (numPendingLaunch > 0)
+            [self launchApplication];
     } else if ([notificationName isEqualToString:NSWorkspaceDidTerminateApplicationNotification]) {
         [newTargets removeObjectForKey:@(thisPID)];
     }
@@ -127,7 +133,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 #endif // DEBUG
 
     for (NSRunningApplication *thisApp in appNames) {
-        if([thisApp.localizedName isEqualToString:MULTIBOXOSX_TARGET_APPLICATION]) {
+        if([thisApp.localizedName isEqualToString:targetApplication]) {
             pid_t thisPID = [thisApp processIdentifier];
 
             NSLog(@"scanForTargets(): Found Target: pid = %u", thisPID);
@@ -156,12 +162,44 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     NSLog(@"checkAccessibility() isTrusted = %hhu", isTrusted);
 }
 
+- (void) readPreferences {
+    NSUserDefaults *preferences = [NSUserDefaults standardUserDefaults];
+
+    NSString *prefTargetApplication = [preferences objectForKey:@"targetApplication"];
+
+    if (prefTargetApplication == NULL || [prefTargetApplication length] == 0) {
+        prefTargetApplication = MULTIBOXOSX_DEFAULT_TARGET_APPLICATION;
+        NSLog(@"Setting targetApplication to default: %@", prefTargetApplication);
+    }
+
+    targetApplication = prefTargetApplication;
+
+    NSString *prefTargetAppPath = [preferences objectForKey:@"targetAppPath"];
+
+    if (prefTargetAppPath == NULL || [prefTargetAppPath length] == 0) {
+        prefTargetAppPath = [NSString stringWithFormat:@"/Applications/%@", prefTargetApplication];
+        NSLog(@"Setting targetAppPath to default: %@", prefTargetAppPath);
+    }
+
+    targetAppPath = prefTargetAppPath;
+
+    [self savePreferences];
+}
+
+- (void) savePreferences {
+    NSUserDefaults *preferences = [NSUserDefaults standardUserDefaults];
+
+    [preferences setObject:targetApplication forKey:@"targetApplication"];
+    [preferences setObject:targetAppPath forKey:@"targetAppPath"];
+    [preferences synchronize];
+}
+
 - (CGEventRef) tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)eventType event:(CGEventRef)event {
     NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
     NSNumber *currentAppProcessIdentifier = (NSNumber *)[currentApp objectForKey:@"NSApplicationProcessIdentifier"];
     NSString *currentAppName = (NSString *)[currentApp objectForKey:@"NSApplicationName"];
 
-    if(![currentAppName isEqualToString:MULTIBOXOSX_TARGET_APPLICATION]) {
+    if(![currentAppName isEqualToString:targetApplication]) {
         return event;
     }
 
@@ -173,17 +211,21 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         NSString *eventString = [self stringFromEvent:event];
         NSLog(@"tapKeyboardCallbackWithProxy(): key=[%@] code=%d", eventString, keycode);
 
-        if (keycode == 113) { // PAUSE/BREAK KEY
-            if (eventType == kCGEventKeyDown) {
-                ignoreEvents = !ignoreEvents;
-                NSLog(@"tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
+        switch (keycode) {
+            case 113: // PAUSE/BREAK KEY
+                if (eventType == kCGEventKeyDown) {
+                    ignoreEvents = !ignoreEvents;
+                    NSLog(@"tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
 
-                if (!ignoreEvents)
-                    [self scanForTargets];
-            }
+                    if (!ignoreEvents)
+                        [self scanForTargets];
+                }
 
-            [self updateUI];
-            return event;
+                [self updateUI];
+
+            case 0x32: // Tilde key
+                return event;
+                break;
         }
 
         if (eventString.length == 1) {
@@ -243,6 +285,11 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     return event;
 }
 
+CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+    MainController *mc = (MainController *) refcon;
+    return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
+}
+
 - (void) setUpEventTaps {
     CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
 
@@ -261,6 +308,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         CFRunLoopRemoveSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
         CFRelease(machPortRunLoopSourceRefKeyboard);
     }
+    
     if (machPortKeyboard) {
         CFRelease(machPortKeyboard);
     }
@@ -300,7 +348,16 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         if (titleRef != NULL)
             CFRelease(titleRef);
 
-        NSLog(@"dumpWindowListOfPid(%d): Window #%d = [%s]", pid, i, buf);
+        NSPoint curPosition = { .x = -1, .y = -1 }, curSize = { .x = -1, .y = -1 };
+        CFTypeRef curPositionRef, curSizeRef;
+
+        if (AXUIElementCopyAttributeValue(winRef, kAXSizeAttribute, &curSizeRef) == kAXErrorSuccess)
+            AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
+
+        if (AXUIElementCopyAttributeValue(winRef, kAXPositionAttribute, &curPositionRef) == kAXErrorSuccess)
+            AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
+
+        NSLog(@"dumpWindowListOfPid(%d): Window #%d = [%s] (%f, %f) %f x %f", pid, i, buf, curPosition.x, curPosition.y, curSize.x, curSize.y);
     }
 
     CFRelease(winRefs);
@@ -390,15 +447,140 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
             toggleButton.title = @"Disable MultiBoxOSX";
             mainWindow.backgroundColor = [NSColor greenColor];
         } else {
-            toggleButton.title = [NSString stringWithFormat:@"Start %@", MULTIBOXOSX_TARGET_APPLICATION];
+            toggleButton.title = [NSString stringWithFormat:@"Start %@", targetApplication];
             mainWindow.backgroundColor = [NSColor yellowColor];
         }
     }
 }
 
-- (IBAction) enableButton:(id)sender {
+- (IBAction) enableButtonClicked:(id)sender {
     ignoreEvents = !ignoreEvents;
+
+    if ([targetApps count] == 0)
+        [self launchApplication];
+
     [self updateUI];
+}
+
+- (IBAction) levelIndicatorClicked:(id)sender {
+    NSLevelIndicator *bar = (NSLevelIndicator *)sender;
+
+    int curCount = [targetApps count];
+    int newCount = [bar intValue];
+
+    if (newCount > curCount && newCount < 6) {
+        numPendingLaunch = newCount - curCount;
+    } else if(curCount <= 5) {
+        numPendingLaunch = 1;
+    }
+
+    if (numPendingLaunch > 0) {
+        [self launchApplication];
+    }
+
+    [bar setDoubleValue:(double)([targetApps count])];
+}
+
+- (void) launchApplication {
+    if ([targetApps count] >= 5)
+        return;
+    
+    NSURL *appURL = [NSURL fileURLWithPath:targetAppPath];
+    NSMutableDictionary *appConfig = [[NSMutableDictionary alloc] init];
+    NSRunningApplication *newApp = [[NSWorkspace sharedWorkspace] launchApplicationAtURL:appURL options:NSWorkspaceLaunchNewInstance configuration:appConfig error:nil];
+#pragma unused(newApp)
+    NSLog(@"Launched %@ pid: %d", appURL, [newApp processIdentifier]);
+}
+
+- (void) positionAppWindowByPID:(pid_t)targetPID instanceNumber:(int)instanceNumber {
+    AXUIElementRef applicationRef = AXUIElementCreateApplication(targetPID);
+    CFArrayRef applicationWindows = NULL;
+    int retry = 1000;
+
+    while(retry > 0 && applicationWindows == NULL) {
+        retry--;
+        AXUIElementCopyAttributeValues(applicationRef, kAXWindowsAttribute, 0, 100, &applicationWindows);
+        usleep(10000);
+    }
+
+    if (applicationWindows == NULL) {
+        NSLog(@"Failed to find application windows!?");
+        return;
+    }
+
+#if DEBUG
+    [self dumpWindowListOfPid:targetPID];
+#endif // DEBUG
+
+    NSArray *screens = [NSScreen screens];
+    NSRect f = [[NSScreen mainScreen] frame];
+    CGFloat sbThickness =[[NSStatusBar systemStatusBar] thickness];
+
+#if DEBUG
+    for(NSScreen *screen in screens) {
+        NSRect sFrame = [screen frame];
+        NSLog(@"Screen (%f, %f) %f x %f", sFrame.origin.x, sFrame.origin.y, sFrame.size.width, sFrame.size.height);
+    }
+#endif
+
+    if (instanceNumber > 1 && [screens count] > 1) {
+        f = [screens[1] frame];
+        f.size.width /= 2;
+        f.size.height /= 2;
+
+        if (instanceNumber == 3 || instanceNumber == 5)
+            f.origin.x += f.size.width;
+
+        if (instanceNumber == 4 || instanceNumber == 5)
+            f.origin.y += f.size.height - sbThickness;
+    } else {
+        if ([[NSStatusBar systemStatusBar] isVertical]) {
+            f.origin.x += sbThickness;
+            f.size.width -= sbThickness;
+        } else {
+            f.origin.y += sbThickness;
+            f.size.height -= sbThickness;
+        }
+    }
+
+    if (CFArrayGetCount(applicationWindows) > 0) {
+        AXError ret = 0;
+        AXUIElementRef windowRef = NULL;
+        CFStringRef titleRef = NULL;
+
+        for (CFIndex i = 0; i < CFArrayGetCount(applicationWindows); i++) {
+            windowRef = CFArrayGetValueAtIndex(applicationWindows, i);
+            AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, (const void**)&titleRef);
+
+            if (titleRef != NULL) {
+                if (CFStringGetLength(titleRef) > 0)
+                    break;
+            }
+        }
+
+        NSPoint curPosition, curSize;
+        CFTypeRef curPositionRef, curSizeRef;
+
+        AXUIElementCopyAttributeValue(windowRef, kAXSizeAttribute, &curSizeRef);
+        AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
+
+        AXUIElementCopyAttributeValue(windowRef, kAXPositionAttribute, &curPositionRef);
+        AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
+
+        NSLog(@"Current Window: (%f, %f) %f x %f", curPosition.x, curPosition.y, curSize.x, curSize.y);
+        NSLog(@"Setup Window: (%f, %f) %f x %f", f.origin.x, f.origin.y, f.size.width, f.size.height);
+
+        ret = AXUIElementSetAttributeValue(windowRef, kAXFocusedAttribute, kCFBooleanTrue);
+        NSLog(@"kAXFocusedAttribute ret = %d", ret);
+
+        AXValueRef positionRef = AXValueCreate(kAXValueCGPointType, &f.origin);
+        ret = AXUIElementSetAttributeValue(windowRef, kAXPositionAttribute, positionRef);
+        NSLog(@"kAXPositionAttribute ret = %d", ret);
+
+        AXValueRef sizeRef = AXValueCreate(kAXValueCGSizeType, &f.size);
+        ret = AXUIElementSetAttributeValue(windowRef, kAXSizeAttribute, sizeRef);
+        NSLog(@"kAXSizeAttribute ret = %d", ret);
+    }
 }
 
 - (NSString *) stringFromEvent:(CGEventRef)event {
@@ -409,7 +591,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     return uni;
 }
 
-- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+- (NSApplicationTerminateReply) applicationShouldTerminate:(NSApplication *)sender {
     NSLog(@"applicationShouldTerminate(%@)", sender);
     [self shutDownEventTaps];
     return NSTerminateNow;
