@@ -42,8 +42,8 @@
     NSDictionary *targetApps;
 }
 
-@property (nonatomic, retain) NSString *targetApplication;
-@property (nonatomic, retain) NSString *targetAppPath;
+@property (atomic, strong) NSString *targetApplication;
+@property (atomic, strong) NSString *targetAppPath;
 
 - (IBAction)enableButtonClicked:(id)sender;
 - (IBAction)levelIndicatorClicked:(id)sender;

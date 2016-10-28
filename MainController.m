@@ -93,8 +93,16 @@
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:@"targetApplication"];
 }
 
+- (void) setTargetApplication:(NSString *)targetApplication {
+    [[NSUserDefaultsController sharedUserDefaultsController] setValue:targetApplication forKey:@"targetApplication"];
+}
+
 - (NSString *)targetAppPath {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:@"targetAppPath"];
+}
+
+- (void)setTargetAppPath:(NSString *)targetAppPath {
+    [[NSUserDefaultsController sharedUserDefaultsController] setValue:targetAppPath forKey:@"targetAppPath"];
 }
 
 - (void)processAppplicationNotifications:(NSNotification *)notification {
