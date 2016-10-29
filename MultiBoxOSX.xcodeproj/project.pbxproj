@@ -12,6 +12,7 @@
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		CB1C7C831DC3F75F00E0D4FF /* MBOButtonKeybind.m in Sources */ = {isa = PBXBuildFile; fileRef = CB1C7C821DC3F75F00E0D4FF /* MBOButtonKeybind.m */; };
 		CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = CBE052CB1DBBD81700D541E8 /* Credits.rtf */; };
 		CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */ = {isa = PBXBuildFile; fileRef = CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */; };
 /* End PBXBuildFile section */
@@ -29,6 +30,8 @@
 		43CAA2000FAC32110026C6DD /* MainController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainController.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* MultiBoxOSX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultiBoxOSX.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB1C7C811DC3F75F00E0D4FF /* MBOButtonKeybind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOButtonKeybind.h; sourceTree = "<group>"; };
+		CB1C7C821DC3F75F00E0D4FF /* MBOButtonKeybind.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOButtonKeybind.m; sourceTree = "<group>"; };
 		CBE052CB1DBBD81700D541E8 /* Credits.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
 		CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = MultiBoxOSX.icns; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -50,6 +53,8 @@
 			children = (
 				43CAA1FF0FAC32110026C6DD /* MainController.h */,
 				43CAA2000FAC32110026C6DD /* MainController.m */,
+				CB1C7C811DC3F75F00E0D4FF /* MBOButtonKeybind.h */,
+				CB1C7C821DC3F75F00E0D4FF /* MBOButtonKeybind.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -187,6 +192,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
+				CB1C7C831DC3F75F00E0D4FF /* MBOButtonKeybind.m in Sources */,
 				43CAA2010FAC32110026C6DD /* MainController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

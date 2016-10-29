@@ -24,10 +24,6 @@
 
 #import "MainController.h"
 
-#if !DEBUG
-#define NSLog(...)
-#endif // DEBUG
-
 @implementation MainController
 
 - (void)awakeFromNib {
@@ -40,13 +36,34 @@
     // Setup Defaults
     NSDictionary *defaultPreferences =
     @{
-      @"targetApplication": @"World of Warcraft",
-      @"targetAppPath": @"/Applications/World of Warcraft/World of Warcraft.app",
+      kMBO_Preference_TargetApplication: @"World of Warcraft",
+      kMBO_Preference_TargetAppPath: @"/Applications/World of Warcraft/World of Warcraft.app",
+
+      // Pause/Break Key on PC Keyboard
+      kMBO_Preference_KeyPause: @"keycode:113",
+
+      // Tilde/backtick, w, a, s, d
+      kMBO_Preference_IgnoreKeys: @[ @"keycode:50", @"keycode:13", @"keycode:0", @"keycode:1", @"keycode:2" ],
     };
 
     [[NSUserDefaults standardUserDefaults] registerDefaults:defaultPreferences];
     [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:defaultPreferences];
 
+    // Listen for changes to key bindings
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    [defaults addObserver:self
+               forKeyPath:kMBO_Preference_KeyPause
+                  options:NSKeyValueObservingOptionNew
+                  context:nil
+     ];
+
+    [defaults addObserver:self
+               forKeyPath:kMBO_Preference_IgnoreKeys
+                  options:NSKeyValueObservingOptionNew
+                  context:nil
+     ];
+    
     // Listen for Application Launch/Terminations
     NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
 
@@ -63,6 +80,8 @@
      ];
 
     // Initialize Application
+    [self compileKeyActionMap];
+
     ignoreEvents = FALSE;
 
     [self scanForTargets];
@@ -76,33 +95,158 @@
 
     [self updateUI];
 #if DEBUG
-    NSTextField *debugLabel;
-
-    debugLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(120, 0, 40, 14)];
-    [debugLabel setStringValue:@"DEBUG"];
-    [debugLabel setFont:[NSFont systemFontOfSize:9]];
-    [debugLabel setBezeled:NO];
-    [debugLabel setEditable:NO];
-    [debugLabel setSelectable:NO];
-    [debugLabel setDrawsBackground:NO];
-    [[mainWindow contentView] addSubview:debugLabel];
+    _debugLabel = [[NSTextField alloc] initWithFrame:NSMakeRect(120, 0, 40, 14)];
+    [_debugLabel setStringValue:@"DEBUG"];
+    [_debugLabel setFont:[NSFont systemFontOfSize:9]];
+    [_debugLabel setBezeled:NO];
+    [_debugLabel setEditable:NO];
+    [_debugLabel setSelectable:NO];
+    [_debugLabel setDrawsBackground:NO];
+    [[mainWindow contentView] addSubview:_debugLabel];
 #endif // DEBUG
 }
 
 - (NSString *)targetApplication {
-    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:@"targetApplication"];
+    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetApplication];
 }
 
 - (void) setTargetApplication:(NSString *)targetApplication {
-    [[NSUserDefaultsController sharedUserDefaultsController] setValue:targetApplication forKey:@"targetApplication"];
+    [[NSUserDefaults standardUserDefaults] setValue:targetApplication forKey:kMBO_Preference_TargetApplication];
 }
 
 - (NSString *)targetAppPath {
-    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:@"targetAppPath"];
+    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetAppPath];
 }
 
 - (void)setTargetAppPath:(NSString *)targetAppPath {
-    [[NSUserDefaultsController sharedUserDefaultsController] setValue:targetAppPath forKey:@"targetAppPath"];
+    [[NSUserDefaults standardUserDefaults] setValue:targetAppPath forKey:kMBO_Preference_TargetAppPath];
+}
+
+- (NSString *)keyPause {
+    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_KeyPause];
+}
+
+-(void)setKeyPause:(NSString *)keyPause {
+    [[NSUserDefaults standardUserDefaults] setValue:keyPause forKey:kMBO_Preference_KeyPause];
+}
+
+-(NSArray *)ignoreKeys {
+    NSArray *keyStrings = [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_IgnoreKeys];
+
+    for (NSObject *obj in keyStrings) {
+        if (![obj isKindOfClass:[NSString class]]) {
+            [self logError:@"user default for ignoreKeys should be an array of all strings, resetting to defaults."];
+            [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"ignoreKeys"];
+            return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_IgnoreKeys];
+        }
+    }
+
+    return keyStrings;
+}
+
+-(void)setIgnoreKeys:(NSArray *)keyStrings {
+    for (NSObject *obj in keyStrings) {
+        if (![obj isKindOfClass:[NSString class]]) {
+            [self logError:@"setIgnoreKeys: Expected array of NSString, ignoring attempt to set to: %@", keyStrings];
+            return;
+        }
+    }
+    [[NSUserDefaults standardUserDefaults] setValue:keyStrings forKey:kMBO_Preference_IgnoreKeys];
+}
+
+-(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    NSLog(@"[self observeValueForKeyPath:%@ ofObject: %@ change:%@ context:0x%lx]", keyPath, object, change, (unsigned long)context);
+
+    if ([object isKindOfClass:[NSUserDefaults class]]) {
+        if ([keyPath isEqualToString:kMBO_Preference_KeyPause] || [keyPath isEqualToString:kMBO_Preference_IgnoreKeys]) {
+            [self compileKeyActionMap];
+        }
+    }
+}
+
+- (BOOL)parseKeyString:(NSString *)keyString keyCode:(CGKeyCode *)keyCode withFlags:(CGEventFlags *)flags {
+    *keyCode = 0;
+    *flags = 0;
+
+    NSError *error = NULL;
+    NSRegularExpression *regex = [NSRegularExpression
+        regularExpressionWithPattern: @"keycode:((?:0x|)[0-9a-f]+)(?:/mod:((?:0x|)[0-9a-z]+)|.*)"
+        options: NSRegularExpressionCaseInsensitive
+        error: &error];
+
+    if (error) {
+        NSLog(@"regex error!? %@", error);
+        return NO;
+    }
+
+    NSArray *matches = [regex matchesInString:keyString options:0 range:NSMakeRange(0, [keyString length])];
+
+    for (NSTextCheckingResult *match in matches) {
+        for (NSUInteger i = 1; i < [match numberOfRanges]; i++) {
+            NSRange matched = [match rangeAtIndex:i];
+
+            if (matched.length > 0) {
+                NSString *hit = [keyString substringWithRange:matched];
+
+                NSScanner *scan = [NSScanner scannerWithString:hit];
+
+                int val = 0;
+
+                if ([hit hasPrefix:@"0x"]) {
+                    uint uVal = 0;
+
+                    if ([scan scanHexInt:&uVal]) {
+                        val = uVal;
+                    } else {
+                        NSLog(@"failed to parse!");
+                        return NO;
+                    }
+                } else {
+                    if (![scan scanInt:&val]) {
+                        NSLog(@"failed to parse!");
+                        return NO;
+                    }
+                }
+
+                if (i == 1) {
+                    *keyCode = val;
+                } else {
+                    *flags = val;
+                }
+            }
+        }
+    }
+
+    NSLog(@"parseKeyString(%@) keyCode: 0x%x flags: 0x%llx", keyString, *keyCode, *flags);
+
+    return YES;
+}
+
+- (void)compileKeyActionMap {
+    bzero(keyActionMap, sizeof(keyActionMap));
+
+    CGKeyCode keyCode = 0;
+    CGEventFlags flagsMask = 0;
+
+    NSLog(@"compileActionKeyMap() %@=%@", kMBO_Preference_KeyPause, self.keyPause);
+
+    if ([self parseKeyString:self.keyPause keyCode:&keyCode withFlags:&flagsMask]) {
+        keyCode %= kMBO_MaxKeyCode;
+        keyActionMap[keyCode].flagsMask = flagsMask;
+        keyActionMap[keyCode].action = kMBO_Pause;
+    }
+
+    NSLog(@"compileActionKeyMap() %@=%@", kMBO_Preference_IgnoreKeys, self.ignoreKeys);
+
+    for (NSString *ignoreKey in self.ignoreKeys) {
+        NSLog(@"Ignore %@", ignoreKey);
+
+        if ([self parseKeyString:ignoreKey keyCode:&keyCode withFlags:&flagsMask]) {
+            keyCode %= kMBO_MaxKeyCode;
+            keyActionMap[keyCode].flagsMask = flagsMask;
+            keyActionMap[keyCode].action = kMBO_Ignore;
+        }
+    }
 }
 
 - (void)processAppplicationNotifications:(NSNotification *)notification {
@@ -190,6 +334,9 @@
 }
 
 - (CGEventRef)tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)eventType event:(CGEventRef)event {
+#if DEBUG
+    NSDate *startTime = [NSDate date];
+#endif // DEBUG
     NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
     NSNumber *currentAppProcessIdentifier = (NSNumber *)[currentApp objectForKey:@"NSApplicationProcessIdentifier"];
     NSString *currentAppName = (NSString *)[currentApp objectForKey:@"NSApplicationName"];
@@ -198,19 +345,25 @@
         return event;
     }
 
-    NSLog(@"tapKeyboardCallbackWithProxy(type:%u, event:%@): currentApp=[%@]", eventType, event, currentAppName);
+    CGKeyCode keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
 
+#if MULTIBOXOSX_LOGKEYS
+    NSLog(@"tapKeyboardCallbackWithProxy(type:%u, event:%@): currentApp=[%@]", eventType, event, currentAppName);
+#endif // MULTIBOXOSX_LOGKEYS
     // check for special keys and ignored keys
     if (eventType == kCGEventKeyDown || eventType == kCGEventKeyUp) {
-        CGKeyCode keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+#if MULTIBOXOSX_LOGKEYS
+        CGEventFlags flags = CGEventGetFlags(event);
         NSString *eventString = [self stringFromEvent:event];
-        NSLog(@"tapKeyboardCallbackWithProxy(): key=[%@] code=%d", eventString, keycode);
+        NSLog(@"tapKeyboardCallbackWithProxy(): key=[%@] code=%d flags=%llx", eventString, keycode, flags);
+#endif // MULTIBOXOSX_LOGKEYS
+        if (keycode < kMBO_MaxKeyCode) {
+            keyActionMap_t *km = &keyActionMap[keycode];
 
-        switch (keycode) {
-            case 113: // PAUSE/BREAK KEY
+            if (km->action == kMBO_Pause) {
                 if (eventType == kCGEventKeyDown) {
                     ignoreEvents = !ignoreEvents;
-                    NSLog(@"tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
+                    NSLog(@"kMBO_Pause(): tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
 
                     if (!ignoreEvents) {
                         [self scanForTargets];
@@ -218,28 +371,17 @@
                 }
 
                 [self updateUI];
-
-            case 0x32: // Tilde key
                 return event;
-                break;
-        }
+            }
 
-        if (eventString.length == 1) {
-            switch ((char) [eventString characterAtIndex:0]) {
-                    /*                case '#': // Toggle Event Forwarding
-                     ignoreEvents = !ignoreEvents;
-                     [self updateUI];
-                     return event;
-                     break;
-                     */
-                case 'w': // Ignore movement keys
-                case 'a':
-                case 's':
-                case 'd':
-                    return event;
-                    break;
+            // TODO: Check ->flagsMask (need to support elsewhere too)
+            if (km->action == kMBO_Ignore) {
+                return event;
             }
         }
+#if MULTIBOXOSX_LOGKEYS
+        NSLog(@"tapKeyboardCallbackWithProxy(): keycode=%d flags=%llx eventString=[%@]", keycode, flags, eventString);
+#endif // MULTIBOXOSX_LOGKEYS
     }
 
     if (ignoreEvents) {
@@ -250,10 +392,6 @@
 
         return event;
     }
-
-#if DEBUG
-    NSDate *startTime = [NSDate date];
-#endif // DEBUG
 
     if (targetApps == NULL || [targetApps count] == 0) {
         NSLog(@"tapKeyboardCallbackWithProxy(), running scanForTargets because we have no targetApps");
@@ -268,14 +406,15 @@
 
         pid_t thisPID = [thisProcessIdentifier longValue];
 
+#if MULTIBOXOSX_LOGKEYS
         NSLog(@"tapKeyboardCallbackWithProxy(): forward event to %u", thisPID);
+#endif // MULTIBOXOSX_LOGKEYS
 
         CGEventPostToPid(thisPID, event);
     }
 
 #if DEBUG
-    NSTimeInterval delta = [startTime timeIntervalSinceNow] * -1.0;
-    NSLog(@"tapKeyboardCallbackWithProxy() processing lag: %f", delta);
+    NSLog(@"tapKeyboardCallbackWithProxy() keycode=%d processing lag: %f", keycode, [startTime timeIntervalSinceNow] * -1.0);
 #endif
 
     [self updateUI];
@@ -489,13 +628,46 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     [bar setDoubleValue:(double)([targetApps count])];
 }
 
+- (IBAction)browseButtonClicked:(id)sender {
+    NSOpenPanel *dirBrowser = [NSOpenPanel openPanel];
+
+    [dirBrowser setAllowsMultipleSelection:NO];
+    [dirBrowser setCanCreateDirectories:NO];
+    [dirBrowser setCanChooseFiles:YES];
+    [dirBrowser setCanChooseDirectories:NO];
+    [dirBrowser setAllowedFileTypes:@[ @"app" ]];
+    [dirBrowser setPrompt:@"Choose"];
+    [dirBrowser setMessage:@"Please choose the application to manage:"];
+
+    if ([dirBrowser runModal] == NSModalResponseOK) {
+        for (NSURL *url in [dirBrowser URLs]) {
+            NSLog(@"Selected: %@", url);
+            self.targetAppPath = [url path];
+        }
+    }
+
+    NSBundle *targetBundle = [NSBundle bundleWithPath:self.targetAppPath];
+
+    if (targetBundle != NULL) {
+        NSDictionary *targetInfo = [targetBundle infoDictionary];
+        NSLog(@"targetInfo=%@", targetInfo);
+
+        NSString *bundleName = [targetInfo objectForKey:@"CFBundleName"];
+
+        if (bundleName && [bundleName length] > 0) {
+            self.targetApplication = bundleName;
+            [self->targetAppVersionTextField setStringValue:[targetInfo objectForKey:@"CFBundleShortVersionString"]];
+        }
+    }
+}
+
 - (void)launchApplication {
     if ([targetApps count] >= 5) {
         return;
     }
     
     NSURL *appURL = [NSURL fileURLWithPath:self.targetAppPath];
-    NSMutableDictionary *appConfig = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *appConfig = CFBridgingRelease([[NSMutableDictionary alloc] init]);
     NSRunningApplication *newApp = [[NSWorkspace sharedWorkspace] launchApplicationAtURL:appURL options:NSWorkspaceLaunchNewInstance configuration:appConfig error:nil];
 #pragma unused(newApp)
     NSLog(@"Launched %@ pid: %d", appURL, [newApp processIdentifier]);
@@ -606,7 +778,13 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
     NSLog(@"applicationShouldTerminate(%@)", sender);
+    [[NSUserDefaults standardUserDefaults] synchronize];
     [self shutDownEventTaps];
+
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
+    [defaults removeObserver:self forKeyPath:kMBO_Preference_KeyPause];
+    [defaults removeObserver:self forKeyPath:kMBO_Preference_IgnoreKeys];
 
     return NSTerminateNow;
 }
@@ -614,6 +792,13 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 - (void)dealloc {
     NSLog(@"dealloc()");
     [super dealloc];
+}
+
+- (void) logError:(NSString *)format, ... {
+    va_list args;
+    va_start(args, format);
+    NSLogv([format stringByAppendingString:[NSString stringWithFormat:@"UNEXPECTED ERROR: "]], args);
+    va_end(args);
 }
 
 @end

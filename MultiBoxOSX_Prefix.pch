@@ -5,3 +5,8 @@
 #ifdef __OBJC__
     #import <Cocoa/Cocoa.h>
 #endif
+
+#if !DEBUG
+#define NSLog(...)
+#endif // DEBUG
+
