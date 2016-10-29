@@ -628,39 +628,6 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     [bar setDoubleValue:(double)([targetApps count])];
 }
 
-- (IBAction)browseButtonClicked:(id)sender {
-    NSOpenPanel *dirBrowser = [NSOpenPanel openPanel];
-
-    [dirBrowser setAllowsMultipleSelection:NO];
-    [dirBrowser setCanCreateDirectories:NO];
-    [dirBrowser setCanChooseFiles:YES];
-    [dirBrowser setCanChooseDirectories:NO];
-    [dirBrowser setAllowedFileTypes:@[ @"app" ]];
-    [dirBrowser setPrompt:@"Choose"];
-    [dirBrowser setMessage:@"Please choose the application to manage:"];
-
-    if ([dirBrowser runModal] == NSModalResponseOK) {
-        for (NSURL *url in [dirBrowser URLs]) {
-            NSLog(@"Selected: %@", url);
-            self.targetAppPath = [url path];
-        }
-    }
-
-    NSBundle *targetBundle = [NSBundle bundleWithPath:self.targetAppPath];
-
-    if (targetBundle != NULL) {
-        NSDictionary *targetInfo = [targetBundle infoDictionary];
-        NSLog(@"targetInfo=%@", targetInfo);
-
-        NSString *bundleName = [targetInfo objectForKey:@"CFBundleName"];
-
-        if (bundleName && [bundleName length] > 0) {
-            self.targetApplication = bundleName;
-            [self->targetAppVersionTextField setStringValue:[targetInfo objectForKey:@"CFBundleShortVersionString"]];
-        }
-    }
-}
-
 - (void)launchApplication {
     if ([targetApps count] >= 5) {
         return;

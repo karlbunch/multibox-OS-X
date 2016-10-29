@@ -6,6 +6,8 @@
     #import <Cocoa/Cocoa.h>
 #endif
 
+#include "Constants.h"
+
 #if !DEBUG
 #define NSLog(...)
 #endif // DEBUG

@@ -134,12 +134,11 @@
         <customObject id="450" customClass="MainController">
             <connections>
                 <outlet property="mainWindow" destination="371" id="455"/>
-                <outlet property="targetAppVersionTextField" destination="Bcb-sM-Tw9" id="f3T-nE-diX"/>
                 <outlet property="targetIndicator" destination="olD-Ki-yRV" id="WsN-t5-dnr"/>
                 <outlet property="toggleButton" destination="451" id="454"/>
             </connections>
         </customObject>
-        <window title="MultiBoxOSX Preferences" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" id="6ha-Sf-Yt8" customClass="NSPanel">
+        <window title="MultiBoxOSX Preferences" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" id="6ha-Sf-Yt8" customClass="MBOPreferencesPane">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" utility="YES"/>
             <rect key="contentRect" x="272" y="172" width="635" height="341"/>
             <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1417"/>
@@ -234,10 +233,10 @@
                         <buttonCell key="cell" type="push" title="Browse" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="dmr-aQ-8rH">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
+                            <connections>
+                                <action selector="browseButtonClicked:" target="6ha-Sf-Yt8" id="oYq-Ee-NoD"/>
+                            </connections>
                         </buttonCell>
-                        <connections>
-                            <action selector="browseButtonClicked:" target="450" id="PH3-sy-2Wp"/>
-                        </connections>
                     </button>
                     <textField verticalHuggingPriority="750" id="Bcb-sM-Tw9">
                         <rect key="frame" x="391" y="242" width="147" height="22"/>
@@ -270,6 +269,9 @@
                     </button>
                 </subviews>
             </view>
+            <connections>
+                <outlet property="targetAppVersionTextField" destination="Bcb-sM-Tw9" id="a35-ys-dgp"/>
+            </connections>
             <point key="canvasLocation" x="12.5" y="524.5"/>
         </window>
         <userDefaultsController representsSharedInstance="YES" id="y5o-oh-MDG"/>

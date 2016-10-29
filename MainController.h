@@ -24,17 +24,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-// Default Application Name we will target
-#define MULTIBOXOSX_DEFAULT_TARGET_APPLICATION @"World of Warcraft"
-
-// Set to 1 for debugging/logging of key events
-#define MULTIBOXOSX_LOGKEYS 0
-
-static NSString * const kMBO_Preference_TargetApplication = @"targetApplication";
-static NSString * const kMBO_Preference_TargetAppPath = @"targetAppPath";
-static NSString * const kMBO_Preference_KeyPause = @"keyPause";
-static NSString * const kMBO_Preference_IgnoreKeys = @"ignoreKeys";
-
 #define kMBO_MaxKeyCode 256
 
 enum keyActionFunction {
@@ -52,7 +41,6 @@ typedef struct {
 	IBOutlet NSWindow *mainWindow;
     IBOutlet NSButton *toggleButton;
     IBOutlet NSLevelIndicator *targetIndicator;
-    IBOutlet NSTextField *targetAppVersionTextField;
 
     keyActionMap_t keyActionMap[kMBO_MaxKeyCode];
 
@@ -77,6 +65,5 @@ typedef struct {
 
 - (IBAction)enableButtonClicked:(id)sender;
 - (IBAction)levelIndicatorClicked:(id)sender;
-- (IBAction)browseButtonClicked:(id)sender;
 
 @end
