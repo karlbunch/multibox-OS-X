@@ -51,7 +51,7 @@ typedef struct {
 	BOOL ignoreEvents;
     BOOL autoExit;
     int numPendingLaunch;
-    NSDictionary *targetApps;
+    NSMutableDictionary *targetApplicationsByPID;
 }
 
 @property (atomic, strong) NSString *targetApplication;

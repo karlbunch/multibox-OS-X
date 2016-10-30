@@ -80,17 +80,19 @@
      ];
 
     // Initialize Application
+    [self clearTargetApplicationsByPID];
+
     [self compileKeyActionMap];
 
     ignoreEvents = FALSE;
 
-    [self scanForTargets];
+    [self scanForTargetApplications];
 
     isTrusted = FALSE;
     [self checkAccessibility:YES];
 
     if (isTrusted) {
-        [self setUpEventTaps];
+        [self setupEventTaps];
     }
 
     [self updateUI];
@@ -154,6 +156,43 @@
     [[NSUserDefaults standardUserDefaults] setValue:keyStrings forKey:kMBO_Preference_IgnoreKeys];
 }
 
+- (void)saveTargetApplicationWithPID:(pid_t)targetPID withDictionary:(NSDictionary *)newEntries {
+    @synchronized (self) {
+        if (targetApplicationsByPID == NULL) {
+            targetApplicationsByPID = [[NSMutableDictionary alloc] init];
+        }
+
+        NSMutableDictionary *entry = targetApplicationsByPID[@(targetPID)];
+
+        if (entry == NULL) {
+            entry = [NSMutableDictionary dictionaryWithDictionary:@{ @"instanceNumber": @([targetApplicationsByPID count]) }];
+        }
+
+        [entry addEntriesFromDictionary:newEntries];
+
+        targetApplicationsByPID[@(targetPID)] = entry;
+
+        NSLog(@"saveTargetApplicationWithPID(%d) targetApplicationsByPID = %@", targetPID, targetApplicationsByPID);
+    }
+}
+
+- (void)removeTargetApplicationWithPID:(pid_t)targetPID {
+    @synchronized (self) {
+        if (targetApplicationsByPID != NULL) {
+            targetApplicationsByPID[@(targetPID)] = nil;
+            NSLog(@"removeTargetApplicationWithPID(%d) targetApplicationsByPID = %@", targetPID, targetApplicationsByPID);
+        }
+    }
+}
+
+-(void)clearTargetApplicationsByPID {
+    @synchronized (self) {
+        targetApplicationsByPID = NULL;
+        targetApplicationsByPID = [[NSMutableDictionary alloc] init];
+    }
+}
+
+// Watch for changes to key binding related defaults
 -(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     NSLog(@"[self observeValueForKeyPath:%@ ofObject: %@ change:%@ context:0x%lx]", keyPath, object, change, (unsigned long)context);
 
@@ -260,18 +299,14 @@
 
     NSLog(@"processAppplicationNotifications() pid: %u %@:\n%@", thisPID, notificationName, notification);
 
-    NSMutableDictionary *newTargets = [targetApps mutableCopy];
-
     if ([notificationName isEqualToString:NSWorkspaceDidLaunchApplicationNotification]) {
-        [self focusFirstWindowOfPid:thisPID];
-        [newTargets setObject:@(TRUE) forKey:@(thisPID)];
+        [self setupTargetApplicationWithPID:thisPID];
+
         autoExit = TRUE;
 
-        if ([targetApps count] > 0) {
+        if ([targetApplicationsByPID count] > 0) {
             ignoreEvents = TRUE;
         }
-
-        [self positionAppWindowByPID:thisPID instanceNumber:[newTargets count]];
 
         if (numPendingLaunch > 0) {
             numPendingLaunch--;
@@ -281,22 +316,19 @@
             [self launchApplication];
         }
     } else if ([notificationName isEqualToString:NSWorkspaceDidTerminateApplicationNotification]) {
-        [newTargets removeObjectForKey:@(thisPID)];
+        [self removeTargetApplicationWithPID:thisPID];
     }
 
-    targetApps = newTargets;
+    NSLog(@"processAppplicationNotifications(): targetApplicationsByPID count=%lu", (unsigned long)[targetApplicationsByPID count]);
 
-    NSLog(@"processAppplicationNotifications(): targetApps count=%lu", (unsigned long)[targetApps count]);
-
-    if (autoExit && [targetApps count] <= 0) {
+    if (autoExit && [targetApplicationsByPID count] <= 0) {
         [[NSApplication sharedApplication] terminate:self];
     }
 
     [self updateUI];
 }
 
-- (void)scanForTargets {
-    NSMutableDictionary *newTargets = [[NSMutableDictionary alloc] init];
+- (void)scanForTargetApplications {
     NSArray *appNames = [[NSWorkspace sharedWorkspace] runningApplications];
 
 #if DEBUG
@@ -307,23 +339,17 @@
         if ([thisApp.localizedName isEqualToString:self.targetApplication]) {
             pid_t thisPID = [thisApp processIdentifier];
 
-            NSLog(@"scanForTargets(): Found Target: pid = %u", thisPID);
-#if DEBUG
-            [self dumpWindowListOfPid:thisPID];
-#endif // DEBUG
-            [self focusFirstWindowOfPid:thisPID];
+            NSLog(@"scanForTargetApplications(): Found Target: pid = %u", thisPID);
+
+            [self setupTargetApplicationWithPID:thisPID];
 
             autoExit = TRUE;
-
-            [newTargets setObject:@(TRUE) forKey:@(thisPID)];
         }
     }
 
-    targetApps = newTargets;
-
 #if DEBUG
     NSTimeInterval delta = [startTime timeIntervalSinceNow] * -1.0;
-    NSLog(@"scanForTargets(): scan time: %f, found %lu targets", delta, [targetApps count]);
+    NSLog(@"scanForTargetApplications(): scan time: %f, found %lu targets", delta, [targetApplicationsByPID count]);
 #endif
 }
 
@@ -366,7 +392,7 @@
                     NSLog(@"kMBO_Pause(): tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
 
                     if (!ignoreEvents) {
-                        [self scanForTargets];
+                        [self scanForTargetApplications];
                     }
                 }
 
@@ -385,20 +411,16 @@
     }
 
     if (ignoreEvents) {
-        if (targetApps != NULL) {
-            [targetApps dealloc];
-            targetApps = NULL;
-        }
-
+        [self clearTargetApplicationsByPID];
         return event;
     }
 
-    if (targetApps == NULL || [targetApps count] == 0) {
-        NSLog(@"tapKeyboardCallbackWithProxy(), running scanForTargets because we have no targetApps");
-        [self scanForTargets];
+    if (targetApplicationsByPID == NULL || [targetApplicationsByPID count] == 0) {
+        NSLog(@"tapKeyboardCallbackWithProxy(), running scanForTargets because we have no targetApplicationsByPID");
+        [self scanForTargetApplications];
     }
 
-    for (NSNumber *thisProcessIdentifier in targetApps) {
+    for (NSNumber *thisProcessIdentifier in targetApplicationsByPID) {
         // Avoid double "echo" effect, don't send to the active application
         if ([thisProcessIdentifier isEqual:currentAppProcessIdentifier]) {
             continue;
@@ -428,7 +450,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
 }
 
-- (void)setUpEventTaps {
+- (void)setupEventTaps {
     CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
 
     machPortKeyboard = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
@@ -438,7 +460,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 
     CFRunLoopAddSource(CFRunLoopGetCurrent(), machPortRunLoopSourceRefKeyboard, kCFRunLoopDefaultMode);
 
-    NSLog(@"setUpEventTaps() done");
+    NSLog(@"setupEventTaps() done");
 }
 
 - (void)shutDownEventTaps {
@@ -452,12 +474,122 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     }
 }
 
-#if DEBUG
-- (void)dumpWindowListOfPid:(pid_t)pid {
-    AXUIElementRef appRef = AXUIElementCreateApplication(pid);
+- (void)setupNewTargetApplicationWithPID:(pid_t)targetPID instanceNumber:(int)instanceNumber {
+    AXError err;
+    CFArrayRef applicationWindows = NULL;
 
-    if (!appRef) {
-        NSLog(@"dumpWindowListOfPid(%d): failed to create application reference!", pid);
+    NSLog(@"setupNewTargetApplicationWithPID(%d) instanceNumber:%d", targetPID, instanceNumber);
+
+    AXUIElementRef applicationRef = AXUIElementCreateApplication(targetPID);
+
+    if (applicationRef == NULL) {
+        [self logError:@"setupNewTargetApplicationWithPID(%d) AXUIElementCreateApplication(%d) failed!", targetPID, targetPID];
+        return;
+    }
+
+    for (int retry = 0;retry < 1000 && applicationWindows == NULL;retry++) {
+        err = AXUIElementCopyAttributeValues(applicationRef, kAXWindowsAttribute, 0, 100, &applicationWindows);
+        usleep(10000);
+    }
+
+    if (applicationWindows == NULL) {
+        [self logError:@"setupNewTargetApplicationWithPID(%d) failed to get kAXWindowsAttribute err = %d", targetPID, err];
+        return;
+    }
+
+    AXObserverRef axObserver;
+    if ((err = AXObserverCreate(targetPID, axObserverCallback, &axObserver)) != kAXErrorSuccess) {
+        [self logError:@"setupNewTargetApplicationWithPID(%d) AXObserverCreate() failed with err = %d", targetPID, err];
+    } else {
+        // TODO: cleanup axObserver memory on shutdown?
+        AXObserverAddNotification(axObserver, applicationRef, kAXWindowMovedNotification, (__bridge void *)(self));
+        AXObserverAddNotification(axObserver, applicationRef, kAXWindowResizedNotification, (__bridge void *)(self));
+        CFRunLoopAddSource([[NSRunLoop currentRunLoop] getCFRunLoop], AXObserverGetRunLoopSource(axObserver), kCFRunLoopDefaultMode);
+    }
+
+    NSArray *screens = [NSScreen screens];
+    NSRect f = [[NSScreen mainScreen] frame];
+    CGFloat sbThickness = [[NSStatusBar systemStatusBar] thickness];
+#if DEBUG
+    for (NSScreen *screen in screens) {
+        NSRect sFrame = [screen frame];
+        NSLog(@"Screen (%f, %f) %f x %f", sFrame.origin.x, sFrame.origin.y, sFrame.size.width, sFrame.size.height);
+    }
+#endif // DEBUG
+
+    if (instanceNumber > 1 && [screens count] > 1) {
+        f = [screens[1] frame];
+        f.size.width /= 2;
+        f.size.height /= 2;
+
+        if (instanceNumber == 3 || instanceNumber == 5) {
+            f.origin.x += f.size.width;
+        }
+
+        if (instanceNumber == 4 || instanceNumber == 5) {
+            f.origin.y += f.size.height - sbThickness;
+        }
+    } else {
+        if ([[NSStatusBar systemStatusBar] isVertical]) {
+            f.origin.x += sbThickness;
+            f.size.width -= sbThickness;
+        } else {
+            f.origin.y += sbThickness;
+            f.size.height -= sbThickness;
+        }
+    }
+
+    if (CFArrayGetCount(applicationWindows) > 0) {
+        AXUIElementRef windowRef = NULL;
+
+        for (CFIndex i = 0; i < CFArrayGetCount(applicationWindows); i++) {
+            windowRef = CFArrayGetValueAtIndex(applicationWindows, i);
+
+            NSString *title = NULL;
+            AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, (CFTypeRef *)&title);
+
+            if ([title length] > 0) {
+                break;
+            }
+        }
+
+        NSPoint curPosition, curSize;
+        CFTypeRef curPositionRef, curSizeRef;
+
+        AXUIElementCopyAttributeValue(windowRef, kAXSizeAttribute, &curSizeRef);
+        AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
+
+        AXUIElementCopyAttributeValue(windowRef, kAXPositionAttribute, &curPositionRef);
+        AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
+
+        NSLog(@"setupNewTargetApplicationWithPID(%d) Current Window: (%f, %f) %f x %f", targetPID, curPosition.x, curPosition.y, curSize.x, curSize.y);
+        NSLog(@"setupNewTargetApplicationWithPID(%d) New Window: (%f, %f) %f x %f", targetPID, f.origin.x, f.origin.y, f.size.width, f.size.height);
+
+        if ((err = AXUIElementSetAttributeValue(windowRef, kAXFocusedAttribute, kCFBooleanTrue)) != kAXErrorSuccess) {
+            [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXFocusedAttribute err = %d", targetPID, err];
+        }
+
+        AXValueRef positionRef = AXValueCreate(kAXValueCGPointType, &f.origin);
+        if ((err = AXUIElementSetAttributeValue(windowRef, kAXPositionAttribute, positionRef)) != kAXErrorSuccess) {
+            [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXPositionAttribute err = %d", targetPID, err];
+        }
+
+        AXValueRef sizeRef = AXValueCreate(kAXValueCGSizeType, &f.size);
+        if ((err = AXUIElementSetAttributeValue(windowRef, kAXSizeAttribute, sizeRef)) != kAXErrorSuccess) {
+            [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXSizeAttribute err = %d", targetPID, err];
+        }
+    }
+}
+
+- (void)setupTargetApplicationWithPID:(pid_t)targetPID {
+    if (targetApplicationsByPID[@(targetPID)] == nil) {
+        [self setupNewTargetApplicationWithPID:targetPID instanceNumber:[targetApplicationsByPID count]];
+    }
+
+    AXUIElementRef appRef = AXUIElementCreateApplication(targetPID);
+
+    if (appRef == NULL) {
+        [self logError:@"setupTargetApplicationWithPID(%d) AXUIElementCreateApplication(%d) failed!", targetPID, targetPID];
         return;
     }
 
@@ -465,91 +597,45 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute, 0, 255, &winRefs);
 
     if (!winRefs) {
-        NSLog(@"dumpWindowListOfPid(%d): failed to create windows reference!", pid);
         CFRelease(appRef);
         return;
     }
 
-    for (int i = 0; i < CFArrayGetCount(winRefs); i++) {
-        AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, i);
-        CFStringRef titleRef = NULL;
-        AXUIElementCopyAttributeValue(winRef, kAXTitleAttribute, (const void**)&titleRef);
+    NSPoint curPosition = { .x = -1, .y = -1 }, curSize = { .x = -1, .y = -1 };
 
-        char buf[1024];
-        buf[0] = '\0';
+#if DEBUG
+    for (CFIndex winNum = 0;winNum < CFArrayGetCount(winRefs); winNum++) {
+#else // DEBUG
+    if (CFArrayGetCount(winRefs) >= 1) {
+        CFIndex winNum = CFArrayGetCount(winRefs) - 1;
+#endif
+        AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, winNum);
 
-        strcpy(buf, "*EMPTY*");
-
-        if (!CFStringGetCString(titleRef, buf, 1023, kCFStringEncodingUTF8))
-            break;
-
-        if (titleRef != NULL) {
-            CFRelease(titleRef);
-        }
-
-        NSPoint curPosition = { .x = -1, .y = -1 }, curSize = { .x = -1, .y = -1 };
         CFTypeRef curPositionRef, curSizeRef;
+
+        AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
 
         if (AXUIElementCopyAttributeValue(winRef, kAXSizeAttribute, &curSizeRef) == kAXErrorSuccess)
             AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
 
         if (AXUIElementCopyAttributeValue(winRef, kAXPositionAttribute, &curPositionRef) == kAXErrorSuccess)
             AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
+#if DEBUG
+        NSString *title = NULL;
+        AXUIElementCopyAttributeValue(winRef, kAXTitleAttribute, (CFTypeRef *)&title);
 
-        NSLog(@"dumpWindowListOfPid(%d): Window #%d = [%s] (%f, %f) %f x %f", pid, i, buf, curPosition.x, curPosition.y, curSize.x, curSize.y);
-    }
-
-    CFRelease(winRefs);
-    CFRelease(appRef);
-}
-
+        NSLog(@"setupTargetApplicationWithPID(%d): Window #%ld = [%@] (%f, %f) %f x %f", targetPID, winNum, title, curPosition.x, curPosition.y, curSize.x, curSize.y);
 #endif // DEBUG
-
-// taken from clone keys
-- (void)focusFirstWindowOfPid:(pid_t)pid {
-    AXUIElementRef appRef = AXUIElementCreateApplication(pid);
-
-    if (!appRef) {
-        return;
     }
 
-    CFArrayRef winRefs;
-    AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute, 0, 255, &winRefs);
+    NSLog(@"setupTargetApplicationWithPID(%d): Main Window = (%f, %f) %f x %f", targetPID, curPosition.x, curPosition.y, curSize.x, curSize.y);
 
-    if (!winRefs) {
-        CFRelease(appRef);
-        return;
-    }
-
-#if !DEBUG
-    for (int i = 0; i < CFArrayGetCount(winRefs); i++) {
-        AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, i);
-        CFStringRef titleRef = NULL;
-        AXUIElementCopyAttributeValue(winRef, kAXTitleAttribute, (const void**)&titleRef);
-
-        char buf[1024];
-        buf[0] = '\0';
-
-        if (!CFStringGetCString(titleRef, buf, 1023, kCFStringEncodingUTF8))
-            break;
-
-        if (titleRef != NULL) {
-            CFRelease(titleRef);
-        }
-
-        NSLog(@"focusFirstWindowOfPid(%d): Window #%d = [%s]", pid, i, buf);
-
-        if (strlen(buf) != 0) {
-            AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
-            break;
-        }
-    }
-#else // DEBUG
-    if (CFArrayGetCount(winRefs) >= 1) {
-        AXUIElementRef winRef = (AXUIElementRef)CFArrayGetValueAtIndex(winRefs, 0);
-        AXUIElementSetAttributeValue(winRef, kAXFocusedAttribute, kCFBooleanTrue);
-    }
-#endif // DEBUG
+        [self saveTargetApplicationWithPID:targetPID withDictionary:
+         @{
+           (NSString *)kAXPositionAttribute: [NSValue valueWithPoint:curPosition],
+           (NSString *)kAXSizeAttribute: [NSValue valueWithPoint:curSize]
+           }
+         ];
 
     AXUIElementSetAttributeValue(appRef, kAXFocusedApplicationAttribute, kCFBooleanTrue);
 
@@ -576,7 +662,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         }
 
         if (isTrusted) {
-            [self setUpEventTaps];
+            [self setupEventTaps];
         }
     }
 
@@ -585,9 +671,9 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         [targetIndicator setDoubleValue:(double)(0)];
         mainWindow.backgroundColor = [NSColor redColor];
     } else {
-        [targetIndicator setDoubleValue:(double)([targetApps count])];
+        [targetIndicator setDoubleValue:(double)([targetApplicationsByPID count])];
 
-        if ([targetApps count] >= 1) {
+        if ([targetApplicationsByPID count] >= 1) {
             toggleButton.title = @"Disable MultiBoxOSX";
             mainWindow.backgroundColor = [NSColor greenColor];
         } else {
@@ -600,7 +686,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 - (IBAction)enableButtonClicked:(id)sender {
     ignoreEvents = !ignoreEvents;
 
-    if ([targetApps count] == 0) {
+    if ([targetApplicationsByPID count] == 0) {
         [self launchApplication];
     }
 
@@ -610,7 +696,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 - (IBAction)levelIndicatorClicked:(id)sender {
     NSLevelIndicator *bar = (NSLevelIndicator *)sender;
 
-    int curCount = [targetApps count];
+    int curCount = [targetApplicationsByPID count];
     int newCount = [bar intValue];
 
     if (newCount > curCount && newCount < 6) {
@@ -625,11 +711,11 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         usleep(5000);
     }
 
-    [bar setDoubleValue:(double)([targetApps count])];
+    [bar setDoubleValue:(double)([targetApplicationsByPID count])];
 }
 
 - (void)launchApplication {
-    if ([targetApps count] >= 5) {
+    if ([targetApplicationsByPID count] >= 5) {
         return;
     }
     
@@ -640,98 +726,13 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     NSLog(@"Launched %@ pid: %d", appURL, [newApp processIdentifier]);
 }
 
-- (void)positionAppWindowByPID:(pid_t)targetPID instanceNumber:(int)instanceNumber {
-    AXUIElementRef applicationRef = AXUIElementCreateApplication(targetPID);
-    CFArrayRef applicationWindows = NULL;
-    int retry = 1000;
+void axObserverCallback(AXObserverRef observer, AXUIElementRef elementRef, CFStringRef notification, void *data)
+{
+    MainController *mc = (__bridge MainController *)data;
 
-    while (retry > 0 && applicationWindows == NULL) {
-        retry--;
-        AXUIElementCopyAttributeValues(applicationRef, kAXWindowsAttribute, 0, 100, &applicationWindows);
-        usleep(10000);
-    }
-
-    if (applicationWindows == NULL) {
-        NSLog(@"Failed to find application windows!?");
-        return;
-    }
-
-#if DEBUG
-    [self dumpWindowListOfPid:targetPID];
-#endif // DEBUG
-
-    NSArray *screens = [NSScreen screens];
-    NSRect f = [[NSScreen mainScreen] frame];
-    CGFloat sbThickness = [[NSStatusBar systemStatusBar] thickness];
-
-#if DEBUG
-
-    for (NSScreen *screen in screens) {
-        NSRect sFrame = [screen frame];
-        NSLog(@"Screen (%f, %f) %f x %f", sFrame.origin.x, sFrame.origin.y, sFrame.size.width, sFrame.size.height);
-    }
-#endif
-
-    if (instanceNumber > 1 && [screens count] > 1) {
-        f = [screens[1] frame];
-        f.size.width /= 2;
-        f.size.height /= 2;
-
-        if (instanceNumber == 3 || instanceNumber == 5) {
-            f.origin.x += f.size.width;
-        }
-
-        if (instanceNumber == 4 || instanceNumber == 5) {
-            f.origin.y += f.size.height - sbThickness;
-        }
-    } else {
-        if ([[NSStatusBar systemStatusBar] isVertical]) {
-            f.origin.x += sbThickness;
-            f.size.width -= sbThickness;
-        } else {
-            f.origin.y += sbThickness;
-            f.size.height -= sbThickness;
-        }
-    }
-
-    if (CFArrayGetCount(applicationWindows) > 0) {
-        AXError ret = 0;
-        AXUIElementRef windowRef = NULL;
-        CFStringRef titleRef = NULL;
-
-        for (CFIndex i = 0; i < CFArrayGetCount(applicationWindows); i++) {
-            windowRef = CFArrayGetValueAtIndex(applicationWindows, i);
-            AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, (const void**)&titleRef);
-
-            if (titleRef != NULL) {
-                if (CFStringGetLength(titleRef) > 0)
-                    break;
-            }
-        }
-
-        NSPoint curPosition, curSize;
-        CFTypeRef curPositionRef, curSizeRef;
-
-        AXUIElementCopyAttributeValue(windowRef, kAXSizeAttribute, &curSizeRef);
-        AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
-
-        AXUIElementCopyAttributeValue(windowRef, kAXPositionAttribute, &curPositionRef);
-        AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
-
-        NSLog(@"Current Window: (%f, %f) %f x %f", curPosition.x, curPosition.y, curSize.x, curSize.y);
-        NSLog(@"Setup Window: (%f, %f) %f x %f", f.origin.x, f.origin.y, f.size.width, f.size.height);
-
-        ret = AXUIElementSetAttributeValue(windowRef, kAXFocusedAttribute, kCFBooleanTrue);
-        NSLog(@"kAXFocusedAttribute ret = %d", ret);
-
-        AXValueRef positionRef = AXValueCreate(kAXValueCGPointType, &f.origin);
-        ret = AXUIElementSetAttributeValue(windowRef, kAXPositionAttribute, positionRef);
-        NSLog(@"kAXPositionAttribute ret = %d", ret);
-
-        AXValueRef sizeRef = AXValueCreate(kAXValueCGSizeType, &f.size);
-        ret = AXUIElementSetAttributeValue(windowRef, kAXSizeAttribute, sizeRef);
-        NSLog(@"kAXSizeAttribute ret = %d", ret);
-    }
+    // Debounce events until they stop
+    [NSObject cancelPreviousPerformRequestsWithTarget:mc selector:@selector(scanForTargetApplications) object:nil];
+    [mc performSelector:@selector(scanForTargetApplications) withObject:nil afterDelay:0.25];
 }
 
 - (NSString *)stringFromEvent:(CGEventRef)event {
@@ -754,11 +755,6 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     [defaults removeObserver:self forKeyPath:kMBO_Preference_IgnoreKeys];
 
     return NSTerminateNow;
-}
-
-- (void)dealloc {
-    NSLog(@"dealloc()");
-    [super dealloc];
 }
 
 - (void) logError:(NSString *)format, ... {
