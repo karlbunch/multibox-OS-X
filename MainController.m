@@ -38,6 +38,7 @@
     @{
       kMBO_Preference_TargetApplication: @"World of Warcraft",
       kMBO_Preference_TargetAppPath: @"/Applications/World of Warcraft/World of Warcraft.app",
+      kMBO_Preference_FavoriteLayout: @{ },
 
       // Pause/Break Key on PC Keyboard
       kMBO_Preference_KeyPause: @"keycode:113",
@@ -108,23 +109,104 @@
 #endif // DEBUG
 }
 
-- (NSString *)targetApplication {
+-(NSString *)targetApplication {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetApplication];
 }
 
-- (void) setTargetApplication:(NSString *)targetApplication {
+-(void)setTargetApplication:(NSString *)targetApplication {
     [[NSUserDefaults standardUserDefaults] setValue:targetApplication forKey:kMBO_Preference_TargetApplication];
 }
 
-- (NSString *)targetAppPath {
+-(NSString *)targetAppPath {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetAppPath];
 }
 
-- (void)setTargetAppPath:(NSString *)targetAppPath {
+-(void)setTargetAppPath:(NSString *)targetAppPath {
     [[NSUserDefaults standardUserDefaults] setValue:targetAppPath forKey:kMBO_Preference_TargetAppPath];
 }
 
-- (NSString *)keyPause {
+-(NSArray *)favoriteLayout {
+    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_FavoriteLayout];
+}
+
+-(void)setFavoriteLayout:(NSArray *)favoriteLayout {
+    [[NSUserDefaults standardUserDefaults] setValue:favoriteLayout forKey:kMBO_Preference_FavoriteLayout];
+}
+
+-(void)getFavoriteLayout:(NSRect *)layout withInstanceNumber:(int)instanceNumber {
+    if (instanceNumber < [self.favoriteLayout count]) {
+        NSDictionary *favoriteEntry = self.favoriteLayout[instanceNumber];
+        
+        layout->origin = NSPointFromString(favoriteEntry[(NSString *)kAXPositionAttribute]);
+        layout->size = NSSizeFromString(favoriteEntry[(NSString *)kAXSizeAttribute]);
+        return;
+    }
+
+    NSLog(@"getFavoriteLayout:0x%lx withInstanceNumber:%d - Calculating New Layout", (unsigned long)layout, instanceNumber);
+
+    NSArray *screens = [NSScreen screens];
+    NSRect newLayout = [[NSScreen mainScreen] frame];
+    CGFloat sbThickness = [[NSStatusBar systemStatusBar] thickness];
+#if DEBUG
+    for (NSScreen *screen in screens) {
+        NSRect sFrame = [screen frame];
+        NSLog(@"getFavoriteLayout: Screen (%f, %f) %f x %f", sFrame.origin.x, sFrame.origin.y, sFrame.size.width, sFrame.size.height);
+    }
+#endif // DEBUG
+
+    if (instanceNumber > 1 && [screens count] > 1) {
+        newLayout = [screens[1] frame];
+        newLayout.size.width /= 2;
+        newLayout.size.height /= 2;
+
+        if (instanceNumber == 3 || instanceNumber == 5) {
+            newLayout.origin.x += newLayout.size.width;
+        }
+
+        if (instanceNumber == 4 || instanceNumber == 5) {
+            newLayout.origin.y += newLayout.size.height - sbThickness;
+        }
+    } else {
+        if ([[NSStatusBar systemStatusBar] isVertical]) {
+            newLayout.origin.x += sbThickness;
+            newLayout.size.width -= sbThickness;
+        } else {
+            newLayout.origin.y += sbThickness;
+            newLayout.size.height -= sbThickness;
+        }
+    }
+
+    *layout = newLayout;
+}
+
+-(void)updateFavoriteLayout {
+    if (targetApplicationsByPID == NULL || [targetApplicationsByPID count] == 0) {
+        return;
+    }
+
+    NSArray *keys = [targetApplicationsByPID keysSortedByValueUsingComparator:^NSComparisonResult(id  _Nonnull obj1, id  _Nonnull obj2) {
+        return [obj1[kMBO_InstanceNumber] compare:obj2[kMBO_InstanceNumber]];
+    }];
+
+    NSMutableArray *newLayout = [NSMutableArray arrayWithArray:self.favoriteLayout];
+
+    while([newLayout count] < [targetApplicationsByPID count]) {
+        [newLayout addObject:[NSNull null]];
+    }
+
+    for(NSString *key in keys) {
+        NSNumber *instanceNumber = targetApplicationsByPID[key][kMBO_InstanceNumber];
+        NSMutableDictionary *entry = [NSMutableDictionary dictionaryWithDictionary:targetApplicationsByPID[key]];
+        entry[kMBO_InstanceNumber] = nil;
+        newLayout[[instanceNumber integerValue]] = entry;
+    }
+
+    NSLog(@"updateFavoriteLayout: newLayout = %@", newLayout);
+
+    [self setFavoriteLayout:newLayout];
+}
+
+-(NSString *)keyPause {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_KeyPause];
 }
 
@@ -165,7 +247,7 @@
         NSMutableDictionary *entry = targetApplicationsByPID[@(targetPID)];
 
         if (entry == NULL) {
-            entry = [NSMutableDictionary dictionaryWithDictionary:@{ @"instanceNumber": @([targetApplicationsByPID count]) }];
+            entry = [NSMutableDictionary dictionaryWithDictionary:@{ kMBO_InstanceNumber: @([targetApplicationsByPID count]) }];
         }
 
         [entry addEntriesFromDictionary:newEntries];
@@ -173,6 +255,8 @@
         targetApplicationsByPID[@(targetPID)] = entry;
 
         NSLog(@"saveTargetApplicationWithPID(%d) targetApplicationsByPID = %@", targetPID, targetApplicationsByPID);
+
+        [self updateFavoriteLayout];
     }
 }
 
@@ -507,77 +591,54 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         CFRunLoopAddSource([[NSRunLoop currentRunLoop] getCFRunLoop], AXObserverGetRunLoopSource(axObserver), kCFRunLoopDefaultMode);
     }
 
-    NSArray *screens = [NSScreen screens];
-    NSRect f = [[NSScreen mainScreen] frame];
-    CGFloat sbThickness = [[NSStatusBar systemStatusBar] thickness];
-#if DEBUG
-    for (NSScreen *screen in screens) {
-        NSRect sFrame = [screen frame];
-        NSLog(@"Screen (%f, %f) %f x %f", sFrame.origin.x, sFrame.origin.y, sFrame.size.width, sFrame.size.height);
+    if (CFArrayGetCount(applicationWindows) <= 0) {
+        return;
     }
+
+    NSRect layout;
+
+    [self getFavoriteLayout:&layout withInstanceNumber:instanceNumber];
+
+    AXUIElementRef windowRef = NULL;
+
+    for (CFIndex i = 0; i < CFArrayGetCount(applicationWindows); i++) {
+        windowRef = CFArrayGetValueAtIndex(applicationWindows, i);
+
+        NSString *title = NULL;
+        AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, (CFTypeRef *)&title);
+
+        if ([title length] > 0) {
+            break;
+        }
+    }
+
+#if DEBUG
+    NSPoint curPosition, curSize;
+    CFTypeRef curPositionRef, curSizeRef;
+
+    AXUIElementCopyAttributeValue(windowRef, kAXSizeAttribute, &curSizeRef);
+    AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
+
+    AXUIElementCopyAttributeValue(windowRef, kAXPositionAttribute, &curPositionRef);
+    AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
+
+    NSLog(@"setupNewTargetApplicationWithPID(%d) Current Window: (%f, %f) %f x %f", targetPID, curPosition.x, curPosition.y, curSize.x, curSize.y);
 #endif // DEBUG
 
-    if (instanceNumber > 1 && [screens count] > 1) {
-        f = [screens[1] frame];
-        f.size.width /= 2;
-        f.size.height /= 2;
+    NSLog(@"setupNewTargetApplicationWithPID(%d) New Window: (%f, %f) %f x %f", targetPID, layout.origin.x, layout.origin.y, layout.size.width, layout.size.height);
 
-        if (instanceNumber == 3 || instanceNumber == 5) {
-            f.origin.x += f.size.width;
-        }
-
-        if (instanceNumber == 4 || instanceNumber == 5) {
-            f.origin.y += f.size.height - sbThickness;
-        }
-    } else {
-        if ([[NSStatusBar systemStatusBar] isVertical]) {
-            f.origin.x += sbThickness;
-            f.size.width -= sbThickness;
-        } else {
-            f.origin.y += sbThickness;
-            f.size.height -= sbThickness;
-        }
+    if ((err = AXUIElementSetAttributeValue(windowRef, kAXFocusedAttribute, kCFBooleanTrue)) != kAXErrorSuccess) {
+        [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXFocusedAttribute err = %d", targetPID, err];
     }
 
-    if (CFArrayGetCount(applicationWindows) > 0) {
-        AXUIElementRef windowRef = NULL;
+    AXValueRef positionRef = AXValueCreate(kAXValueCGPointType, &layout.origin);
+    if ((err = AXUIElementSetAttributeValue(windowRef, kAXPositionAttribute, positionRef)) != kAXErrorSuccess) {
+        [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXPositionAttribute err = %d", targetPID, err];
+    }
 
-        for (CFIndex i = 0; i < CFArrayGetCount(applicationWindows); i++) {
-            windowRef = CFArrayGetValueAtIndex(applicationWindows, i);
-
-            NSString *title = NULL;
-            AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, (CFTypeRef *)&title);
-
-            if ([title length] > 0) {
-                break;
-            }
-        }
-
-        NSPoint curPosition, curSize;
-        CFTypeRef curPositionRef, curSizeRef;
-
-        AXUIElementCopyAttributeValue(windowRef, kAXSizeAttribute, &curSizeRef);
-        AXValueGetValue(curSizeRef, kAXValueCGSizeType, &curSize);
-
-        AXUIElementCopyAttributeValue(windowRef, kAXPositionAttribute, &curPositionRef);
-        AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
-
-        NSLog(@"setupNewTargetApplicationWithPID(%d) Current Window: (%f, %f) %f x %f", targetPID, curPosition.x, curPosition.y, curSize.x, curSize.y);
-        NSLog(@"setupNewTargetApplicationWithPID(%d) New Window: (%f, %f) %f x %f", targetPID, f.origin.x, f.origin.y, f.size.width, f.size.height);
-
-        if ((err = AXUIElementSetAttributeValue(windowRef, kAXFocusedAttribute, kCFBooleanTrue)) != kAXErrorSuccess) {
-            [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXFocusedAttribute err = %d", targetPID, err];
-        }
-
-        AXValueRef positionRef = AXValueCreate(kAXValueCGPointType, &f.origin);
-        if ((err = AXUIElementSetAttributeValue(windowRef, kAXPositionAttribute, positionRef)) != kAXErrorSuccess) {
-            [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXPositionAttribute err = %d", targetPID, err];
-        }
-
-        AXValueRef sizeRef = AXValueCreate(kAXValueCGSizeType, &f.size);
-        if ((err = AXUIElementSetAttributeValue(windowRef, kAXSizeAttribute, sizeRef)) != kAXErrorSuccess) {
-            [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXSizeAttribute err = %d", targetPID, err];
-        }
+    AXValueRef sizeRef = AXValueCreate(kAXValueCGSizeType, &layout.size);
+    if ((err = AXUIElementSetAttributeValue(windowRef, kAXSizeAttribute, sizeRef)) != kAXErrorSuccess) {
+        [self logError:@"setupNewTargetApplicationWithPID(%d) failed to set kAXSizeAttribute err = %d", targetPID, err];
     }
 }
 
@@ -601,7 +662,8 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         return;
     }
 
-    NSPoint curPosition = { .x = -1, .y = -1 }, curSize = { .x = -1, .y = -1 };
+    NSPoint curPosition = { .x = -1, .y = -1 };
+    NSSize curSize = { .width = -1, .height = -1 };
 
 #if DEBUG
     for (CFIndex winNum = 0;winNum < CFArrayGetCount(winRefs); winNum++) {
@@ -624,16 +686,16 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         NSString *title = NULL;
         AXUIElementCopyAttributeValue(winRef, kAXTitleAttribute, (CFTypeRef *)&title);
 
-        NSLog(@"setupTargetApplicationWithPID(%d): Window #%ld = [%@] (%f, %f) %f x %f", targetPID, winNum, title, curPosition.x, curPosition.y, curSize.x, curSize.y);
+        NSLog(@"setupTargetApplicationWithPID(%d): Window #%ld = [%@] (%f, %f) %f x %f", targetPID, winNum, title, curPosition.x, curPosition.y, curSize.width, curSize.height);
 #endif // DEBUG
     }
 
-    NSLog(@"setupTargetApplicationWithPID(%d): Main Window = (%f, %f) %f x %f", targetPID, curPosition.x, curPosition.y, curSize.x, curSize.y);
+    NSLog(@"setupTargetApplicationWithPID(%d): Main Window = (%f, %f) %f x %f", targetPID, curPosition.x, curPosition.y, curSize.width, curSize.height);
 
         [self saveTargetApplicationWithPID:targetPID withDictionary:
          @{
-           (NSString *)kAXPositionAttribute: [NSValue valueWithPoint:curPosition],
-           (NSString *)kAXSizeAttribute: [NSValue valueWithPoint:curSize]
+           (NSString *)kAXPositionAttribute: NSStringFromPoint(curPosition),
+           (NSString *)kAXSizeAttribute: NSStringFromSize(curSize)
            }
          ];
 

@@ -56,6 +56,7 @@ typedef struct {
 
 @property (atomic, strong) NSString *targetApplication;
 @property (atomic, strong) NSString *targetAppPath;
+@property (atomic, strong) NSArray *favoriteLayout;
 @property (atomic, strong) NSString *keyPause;
 @property (atomic, strong) NSArray *ignoreKeys;
 
