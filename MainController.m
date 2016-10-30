@@ -21,6 +21,7 @@
 // along with Multibox-OS-X.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <ApplicationServices/ApplicationServices.h>
+#import <Carbon/Carbon.h>
 
 #import "MainController.h"
 
@@ -555,6 +556,41 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     
     if (machPortKeyboard) {
         CFRelease(machPortKeyboard);
+    }
+}
+
+-(void)sendToPID:(pid_t)targetPID keys:(NSString *)keys {
+    NSLog(@"SendToPID:%d keys:[%@]", targetPID, keys);
+    for (int i = 0;i < [keys length];i++) {
+        CGKeyCode keySpecial = 0xFFFF;
+        UniChar chr = [keys characterAtIndex: i];
+
+        switch (chr) {
+            case 9:
+                keySpecial = kVK_Tab;
+                break;
+
+            case 10:
+                keySpecial = kVK_Return;
+                break;
+        }
+
+        if (keySpecial != 0xFFFF) {
+            CGEventRef keyEvent = CGEventCreateKeyboardEvent(nil, keySpecial, YES);
+            CGEventPostToPid(targetPID, keyEvent);
+            CFRelease(keyEvent);
+            usleep(500000);
+            keyEvent = CGEventCreateKeyboardEvent(nil, keySpecial, NO);
+            CGEventPostToPid(targetPID, keyEvent);
+            CFRelease(keyEvent);
+            usleep(1000000);
+        } else {
+            CGEventRef keyEvent = CGEventCreateKeyboardEvent(nil, 0, YES);
+            CGEventKeyboardSetUnicodeString(keyEvent, 1, &chr);
+            CGEventPostToPid(targetPID, keyEvent);
+            CFRelease(keyEvent);
+            usleep(250000);
+        }
     }
 }
 
