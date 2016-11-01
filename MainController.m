@@ -39,7 +39,7 @@
     @{
       kMBO_Preference_TargetApplication: @"World of Warcraft",
       kMBO_Preference_TargetAppPath: @"/Applications/World of Warcraft/World of Warcraft.app",
-      kMBO_Preference_FavoriteLayout: @{ },
+      kMBO_Preference_FavoriteLayout: @[ ],
 
       // Pause/Break Key on PC Keyboard
       kMBO_Preference_KeyPause: @"keycode:113",
@@ -445,9 +445,9 @@
 }
 
 - (CGEventRef)tapKeyboardCallbackWithProxy:(CGEventTapProxy)proxy type:(CGEventType)eventType event:(CGEventRef)event {
-#if DEBUG
+#if MULTIBOXOSX_LOGKEYS
     NSDate *startTime = [NSDate date];
-#endif // DEBUG
+#endif // MULTIBOXOSX_LOGKEYS
     NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
     NSNumber *currentAppProcessIdentifier = (NSNumber *)[currentApp objectForKey:@"NSApplicationProcessIdentifier"];
     NSString *currentAppName = (NSString *)[currentApp objectForKey:@"NSApplicationName"];
@@ -520,9 +520,9 @@
         CGEventPostToPid(thisPID, event);
     }
 
-#if DEBUG
+#if MULTIBOXOSX_LOGKEYS
     NSLog(@"tapKeyboardCallbackWithProxy() keycode=%d processing lag: %f", keycode, [startTime timeIntervalSinceNow] * -1.0);
-#endif
+#endif // MULTIBOXOSX_LOGKEYS
 
     [self updateUI];
 
