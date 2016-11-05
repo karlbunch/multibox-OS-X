@@ -242,7 +242,7 @@
 				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = "DEBUG=1";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.github.karlbunch.multibox-OS-X";
 				PRODUCT_NAME = MultiBoxOSX;
 			};
@@ -259,7 +259,7 @@
 				GCC_PREFIX_HEADER = MultiBoxOSX_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.github.karlbunch.multibox-OS-X";
 				PRODUCT_NAME = MultiBoxOSX;
 			};
@@ -291,7 +291,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				ONLY_ACTIVE_ARCH = YES;
 				PREBINDING = NO;
-				SDKROOT = macosx10.11;
+				SDKROOT = macosx10.12;
 			};
 			name = Debug;
 		};
@@ -318,7 +318,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PREBINDING = NO;
-				SDKROOT = macosx10.11;
+				SDKROOT = macosx10.12;
 			};
 			name = Release;
 		};

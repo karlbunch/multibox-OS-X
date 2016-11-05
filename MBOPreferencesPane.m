@@ -10,7 +10,7 @@
 
 @implementation MBOPreferencesPane
 
--(instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSUInteger)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag {
+-(instancetype)initWithContentRect:(NSRect)contentRect styleMask:(NSWindowStyleMask)aStyle backing:(NSBackingStoreType)bufferingType defer:(BOOL)flag {
     self = [super initWithContentRect:contentRect styleMask:aStyle backing:bufferingType defer:flag];
 
     NSLog(@"[%@ initWithContentRect:(%f, %f) %f x %f styleMask:%lu backing:%lu defer:%d]", [self className], contentRect.origin.x, contentRect.origin.y, contentRect.size.width, contentRect.size.height, (unsigned long)aStyle, (unsigned long)bufferingType, flag);
