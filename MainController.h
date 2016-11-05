@@ -47,10 +47,10 @@ typedef struct {
 	CFMachPortRef machPortKeyboard;
 	CFRunLoopSourceRef machPortRunLoopSourceRefKeyboard;
 
-    Boolean isTrusted;
+    BOOL isTrusted;
 	BOOL ignoreEvents;
     BOOL autoExit;
-    int numPendingLaunch;
+    NSInteger numPendingLaunch;
     NSMutableDictionary *targetApplicationsByPID;
 }
 

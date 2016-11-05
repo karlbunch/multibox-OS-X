@@ -134,7 +134,7 @@
     [[NSUserDefaults standardUserDefaults] setValue:favoriteLayout forKey:kMBO_Preference_FavoriteLayout];
 }
 
--(void)getFavoriteLayout:(NSRect *)layout withInstanceNumber:(int)instanceNumber {
+-(void)getFavoriteLayout:(NSRect *)layout withInstanceNumber:(long)instanceNumber {
     if (instanceNumber < [self.favoriteLayout count]) {
         NSDictionary *favoriteEntry = self.favoriteLayout[instanceNumber];
         
@@ -143,7 +143,7 @@
         return;
     }
 
-    NSLog(@"getFavoriteLayout:0x%lx withInstanceNumber:%d - Calculating New Layout", (unsigned long)layout, instanceNumber);
+    NSLog(@"getFavoriteLayout:0x%lx withInstanceNumber:%ld - Calculating New Layout", (unsigned long)layout, instanceNumber);
 
     NSArray *screens = [NSScreen screens];
     NSRect newLayout = [[NSScreen mainScreen] frame];
@@ -380,7 +380,7 @@
 
     NSString *notificationName = [notification name];
 
-    pid_t thisPID = [[[notification userInfo] objectForKey:@"NSApplicationProcessIdentifier"] longValue];
+    pid_t thisPID = (pid_t)[[[notification userInfo] objectForKey:@"NSApplicationProcessIdentifier"] integerValue];
 
     NSLog(@"processAppplicationNotifications() pid: %u %@:\n%@", thisPID, notificationName, notification);
 
@@ -511,7 +511,7 @@
             continue;
         }
 
-        pid_t thisPID = [thisProcessIdentifier longValue];
+        pid_t thisPID = (pid_t)[thisProcessIdentifier integerValue];
 
 #if MULTIBOXOSX_LOGKEYS
         NSLog(@"tapKeyboardCallbackWithProxy(): forward event to %u", thisPID);
@@ -594,11 +594,11 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     }
 }
 
-- (void)setupNewTargetApplicationWithPID:(pid_t)targetPID instanceNumber:(int)instanceNumber {
+- (void)setupNewTargetApplicationWithPID:(pid_t)targetPID instanceNumber:(long)instanceNumber {
     AXError err;
     CFArrayRef applicationWindows = NULL;
 
-    NSLog(@"setupNewTargetApplicationWithPID(%d) instanceNumber:%d", targetPID, instanceNumber);
+    NSLog(@"setupNewTargetApplicationWithPID(%d) instanceNumber:%ld", targetPID, instanceNumber);
 
     AXUIElementRef applicationRef = AXUIElementCreateApplication(targetPID);
 
@@ -794,8 +794,8 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
 - (IBAction)levelIndicatorClicked:(id)sender {
     NSLevelIndicator *bar = (NSLevelIndicator *)sender;
 
-    int curCount = [targetApplicationsByPID count];
-    int newCount = [bar intValue];
+    NSInteger curCount = [targetApplicationsByPID count];
+    NSInteger newCount = [bar intValue];
 
     if (newCount > curCount && newCount < 6) {
         numPendingLaunch = newCount - curCount;
