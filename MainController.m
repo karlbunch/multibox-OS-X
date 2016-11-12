@@ -448,11 +448,9 @@
 #if MULTIBOXOSX_LOGKEYS
     NSDate *startTime = [NSDate date];
 #endif // MULTIBOXOSX_LOGKEYS
-    NSDictionary *currentApp = [[NSWorkspace sharedWorkspace] activeApplication];
-    NSNumber *currentAppProcessIdentifier = (NSNumber *)[currentApp objectForKey:@"NSApplicationProcessIdentifier"];
-    NSString *currentAppName = (NSString *)[currentApp objectForKey:@"NSApplicationName"];
+    NSRunningApplication *frontmostApp = [[NSWorkspace sharedWorkspace] frontmostApplication];
 
-    if (![currentAppName isEqualToString:self.targetApplication]) {
+    if (![frontmostApp.localizedName isEqualToString:self.targetApplication]) {
         return event;
     }
 
@@ -506,12 +504,12 @@
     }
 
     for (NSNumber *thisProcessIdentifier in targetApplicationsByPID) {
+        pid_t thisPID = (pid_t)[thisProcessIdentifier integerValue];
+
         // Avoid double "echo" effect, don't send to the active application
-        if ([thisProcessIdentifier isEqual:currentAppProcessIdentifier]) {
+        if (thisPID == frontmostApp.processIdentifier) {
             continue;
         }
-
-        pid_t thisPID = (pid_t)[thisProcessIdentifier integerValue];
 
 #if MULTIBOXOSX_LOGKEYS
         NSLog(@"tapKeyboardCallbackWithProxy(): forward event to %u", thisPID);
