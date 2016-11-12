@@ -23,6 +23,7 @@
 // along with Multibox-OS-X.  If not, see <http://www.gnu.org/licenses/>.
 
 #import <Cocoa/Cocoa.h>
+#import <MASShortcut/Shortcut.h>
 
 #define kMBO_MaxKeyCode 256
 
@@ -33,7 +34,7 @@ enum keyActionFunction {
 };
 
 typedef struct {
-    uint64_t flagsMask;
+    uint64_t modifierFlags;
     enum keyActionFunction action;
 } keyActionMap_t;
 
@@ -57,7 +58,7 @@ typedef struct {
 @property (atomic, strong) NSString *targetApplication;
 @property (atomic, strong) NSString *targetAppPath;
 @property (atomic, strong) NSArray *favoriteLayout;
-@property (atomic, strong) NSString *keyPause;
+@property (atomic, strong) MASShortcut *pauseShortcut;
 @property (atomic, strong) NSArray *ignoreKeys;
 
 #if DEBUG

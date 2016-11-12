@@ -33,6 +33,8 @@
         }
     }
 
+    [pauseShortcut setAssociatedUserDefaultsKey:kMBO_Shortcut_Pause];
+
     [super makeKeyAndOrderFront:sender];
 }
 

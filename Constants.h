@@ -18,8 +18,8 @@
 static NSString * const kMBO_Preference_TargetApplication = @"targetApplication";
 static NSString * const kMBO_Preference_TargetAppPath = @"targetAppPath";
 static NSString * const kMBO_Preference_FavoriteLayout = @"favoriteLayout";
-static NSString * const kMBO_Preference_KeyPause = @"keyPause";
-static NSString * const kMBO_Preference_IgnoreKeys = @"ignoreKeys";
 static NSString * const kMBO_InstanceNumber = @"instanceNumber";
+static NSString * const kMBO_Shortcut_Pause = @"ShortcutPause";
+static NSString * const kMBO_Shortcut_IgnoreList = @"ShortcutIgnoreList";
 
 #endif /* Constants_h */

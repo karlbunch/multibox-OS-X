@@ -9,16 +9,17 @@
 /* Begin PBXBuildFile section */
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		43CAA2010FAC32110026C6DD /* MainController.m in Sources */ = {isa = PBXBuildFile; fileRef = 43CAA2000FAC32110026C6DD /* MainController.m */; };
+		4DDFCF08A300A81A83E4787E /* Pods_MultiBoxOSX.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A931F66D462C2749F56A2249 /* Pods_MultiBoxOSX.framework */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
-		CB1C7C831DC3F75F00E0D4FF /* MBOButtonKeybind.m in Sources */ = {isa = PBXBuildFile; fileRef = CB1C7C821DC3F75F00E0D4FF /* MBOButtonKeybind.m */; };
 		CB9625A41DC4C96900507F04 /* MBOPreferencesPane.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */; };
 		CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = CBE052CB1DBBD81700D541E8 /* Credits.rtf */; };
 		CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */ = {isa = PBXBuildFile; fileRef = CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		00443823717EB55C22931A15 /* Pods-MultiBoxOSX.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultiBoxOSX.release.xcconfig"; path = "Pods/Target Support Files/Pods-MultiBoxOSX/Pods-MultiBoxOSX.release.xcconfig"; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		13E42FB307B3F0F600E4EEF1 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = /System/Library/Frameworks/CoreData.framework; sourceTree = "<absolute>"; };
@@ -31,13 +32,13 @@
 		43CAA2000FAC32110026C6DD /* MainController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainController.m; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* MultiBoxOSX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultiBoxOSX.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		CB1C7C811DC3F75F00E0D4FF /* MBOButtonKeybind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOButtonKeybind.h; sourceTree = "<group>"; };
-		CB1C7C821DC3F75F00E0D4FF /* MBOButtonKeybind.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOButtonKeybind.m; sourceTree = "<group>"; };
+		A931F66D462C2749F56A2249 /* Pods_MultiBoxOSX.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MultiBoxOSX.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB9625A21DC4C96900507F04 /* MBOPreferencesPane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOPreferencesPane.h; sourceTree = "<group>"; };
 		CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOPreferencesPane.m; sourceTree = "<group>"; };
 		CB9625A51DC4CE7500507F04 /* Constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Constants.h; sourceTree = "<group>"; };
 		CBE052CB1DBBD81700D541E8 /* Credits.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
 		CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = MultiBoxOSX.icns; sourceTree = "<group>"; };
+		F41C07E08F676B57902A68C3 /* Pods-MultiBoxOSX.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultiBoxOSX.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MultiBoxOSX/Pods-MultiBoxOSX.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +47,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				4DDFCF08A300A81A83E4787E /* Pods_MultiBoxOSX.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,8 +60,6 @@
 				CB9625A51DC4CE7500507F04 /* Constants.h */,
 				43CAA1FF0FAC32110026C6DD /* MainController.h */,
 				43CAA2000FAC32110026C6DD /* MainController.m */,
-				CB1C7C811DC3F75F00E0D4FF /* MBOButtonKeybind.h */,
-				CB1C7C821DC3F75F00E0D4FF /* MBOButtonKeybind.m */,
 				CB9625A21DC4C96900507F04 /* MBOPreferencesPane.h */,
 				CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */,
 			);
@@ -100,6 +100,7 @@
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
+				F3F695D03BC8919E3B8AC7B9 /* Pods */,
 			);
 			name = MultiBoxOSX;
 			sourceTree = "<group>";
@@ -130,8 +131,18 @@
 			children = (
 				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
 				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+				A931F66D462C2749F56A2249 /* Pods_MultiBoxOSX.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F3F695D03BC8919E3B8AC7B9 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				F41C07E08F676B57902A68C3 /* Pods-MultiBoxOSX.debug.xcconfig */,
+				00443823717EB55C22931A15 /* Pods-MultiBoxOSX.release.xcconfig */,
+			);
+			name = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -141,9 +152,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "MultiBoxOSX" */;
 			buildPhases = (
+				F957FC0FB89DCFCDF7972CCE /* [CP] Check Pods Manifest.lock */,
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
+				FC233508F57B5323AA2EEDAC /* [CP] Embed Pods Frameworks */,
+				890B8BFC594EED648A23E9CC /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -171,6 +185,7 @@
 				en,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* MultiBoxOSX */;
+			productRefGroup = 19C28FACFE9D520D11CA2CBB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -193,13 +208,60 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		890B8BFC594EED648A23E9CC /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-MultiBoxOSX/Pods-MultiBoxOSX-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		F957FC0FB89DCFCDF7972CCE /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		FC233508F57B5323AA2EEDAC /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-MultiBoxOSX/Pods-MultiBoxOSX-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		8D11072C0486CEB800E47090 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
-				CB1C7C831DC3F75F00E0D4FF /* MBOButtonKeybind.m in Sources */,
 				43CAA2010FAC32110026C6DD /* MainController.m in Sources */,
 				CB9625A41DC4C96900507F04 /* MBOPreferencesPane.m in Sources */,
 			);
@@ -229,6 +291,7 @@
 /* Begin XCBuildConfiguration section */
 		C01FCF4B08A954540054247B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F41C07E08F676B57902A68C3 /* Pods-MultiBoxOSX.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -250,6 +313,7 @@
 		};
 		C01FCF4C08A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 00443823717EB55C22931A15 /* Pods-MultiBoxOSX.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COMBINE_HIDPI_IMAGES = YES;

@@ -7,9 +7,11 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import <MASShortcut/Shortcut.h>
 
 @interface MBOPreferencesPane : NSPanel {
     IBOutlet NSTextField *targetAppVersionTextField;
+    IBOutlet MASShortcutView *pauseShortcut;
 }
 
 @property (atomic, strong) NSString *targetApplication;
