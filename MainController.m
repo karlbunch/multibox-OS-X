@@ -35,37 +35,31 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     // Setup Defaults
-    NSMutableArray *defaultIgnoreList = [[[NSMutableArray alloc] init] autorelease];
+    NSMapTable *defaultKeyBindings = [NSMapTable strongToStrongObjectsMapTable];
 
-    // By default ignore: Tilde/backtick, w, a, s, d
-    for(NSNumber *n in @[ @50, @13, @0, @1, @2]) {
-        MASShortcut *shortcut = [MASShortcut shortcutWithKeyCode:[n unsignedIntegerValue] modifierFlags:0];
+    for(NSNumber *keyCode in @[ @50, @13, @0, @1, @2]) {
+        MBOKeybinding *key = [MBOKeybinding shortcutWithKeyCode:[keyCode unsignedIntegerValue] modifierFlags:0 bindingAction:kMBOKeybindingActionIgnore];
 
-        if (shortcut != NULL) {
-            [defaultIgnoreList addObject:[NSKeyedArchiver archivedDataWithRootObject:shortcut]];
-        }
+        [defaultKeyBindings setObject:key forKey:keyCode];
     }
+
+    [defaultKeyBindings setObject:[MBOKeybinding shortcutWithKeyCode:113 modifierFlags:0 bindingAction:kMBOKeybindingActionToggleForwarding] forKey:@(113)];
 
     NSDictionary *defaultPreferences =
     @{
+      kMBO_Preference_Version: @"",
       kMBO_Preference_TargetApplication: @"World of Warcraft",
       kMBO_Preference_TargetAppPath: @"/Applications/World of Warcraft/World of Warcraft.app",
       kMBO_Preference_FavoriteLayout: @[ ],
-      kMBO_Shortcut_IgnoreList: defaultIgnoreList,
-      kMBO_Shortcut_Pause: [NSKeyedArchiver archivedDataWithRootObject:[MASShortcut shortcutWithKeyCode:113 modifierFlags:0]]
+      kMBO_Preference_KeyBindings: [NSKeyedArchiver archivedDataWithRootObject:defaultKeyBindings],
     };
 
     [[NSUserDefaults standardUserDefaults] registerDefaults:defaultPreferences];
     [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:defaultPreferences];
+    [[NSUserDefaults standardUserDefaults] setValue:kMBO_CurrentPreferencesVersion forKey:kMBO_Preference_Version];
 
     // Listen for changes to key bindings
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
-    for(NSString *key in [defaults dictionaryRepresentation]) {
-        if ([key hasPrefix:@"Shortcut"]) {
-            [defaults addObserver:self forKeyPath:key options:NSKeyValueObservingOptionNew context:nil];
-        }
-    }
+    [[NSUserDefaults standardUserDefaults] addObserver:self forKeyPath:kMBO_Preference_KeyBindings options:NSKeyValueObservingOptionNew context:nil];
 
     // Listen for Application Launch/Terminations
     NSNotificationCenter *center = [[NSWorkspace sharedWorkspace] notificationCenter];
@@ -208,48 +202,19 @@
     [self setFavoriteLayout:newLayout];
 }
 
--(NSArray *)ignoreKeys {
-    NSMutableArray *ignoreKeys = [[[NSMutableArray alloc] init] autorelease];
-    id list = [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Shortcut_IgnoreList];
-
-    if (list != NULL) {
-        for (NSData *obj in (NSArray *)list) {
-            MASShortcut *ignoreKey = [NSKeyedUnarchiver unarchiveObjectWithData:(NSData *)obj];
-
-            [ignoreKeys addObject:ignoreKey];
-        }
-    }
-
-    return ignoreKeys;
-}
-
--(void)setIgnoreKeys:(NSArray *)ignoreList {
-    NSMutableArray *ignoreKeys = [[[NSMutableArray alloc] init] autorelease];
-
-    for (MASShortcut *obj in ignoreList) {
-        [ignoreKeys addObject:[NSKeyedArchiver archivedDataWithRootObject:obj]];
-    }
-
-    [[NSUserDefaults standardUserDefaults] setValue:ignoreKeys forKey:kMBO_Shortcut_IgnoreList];
-}
-
--(MASShortcut *)pauseShortcut {
-    return [self getShortcutWithName:kMBO_Shortcut_Pause];
-}
-
--(void)setPauseShortcut:(MASShortcut *)pauseShortcut {
-    [[NSUserDefaults standardUserDefaults] setValue:[NSKeyedArchiver archivedDataWithRootObject:pauseShortcut] forKey:kMBO_Shortcut_Pause];
-}
-
--(MASShortcut *)getShortcutWithName:(NSString *)shortcutName {
-    id value = [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:shortcutName];
+-(NSMapTable *)keyBindings {
+    id value = [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_KeyBindings];
 
     if (value == NULL)
         return NULL;
 
-    MASShortcut *shortcut = [NSKeyedUnarchiver unarchiveObjectWithData:(NSData *)value];
+    NSMapTable *map = [NSKeyedUnarchiver unarchiveObjectWithData:(NSData *)value];
 
-    return shortcut;
+    return map;
+}
+
+-(void)setKeyBindings:(NSMapTable *)keyBindings {
+    [[NSUserDefaults standardUserDefaults] setValue:[NSKeyedArchiver archivedDataWithRootObject:keyBindings] forKey:kMBO_Preference_KeyBindings];
 }
 
 - (void)saveTargetApplicationWithPID:(pid_t)targetPID withDictionary:(NSDictionary *)newEntries {
@@ -295,7 +260,7 @@
     NSLog(@"[self observeValueForKeyPath:%@ ofObject: %@ change:%@ context:0x%lx]", keyPath, object, change, (unsigned long)context);
 
     if ([object isKindOfClass:[NSUserDefaults class]]) {
-        if ([keyPath hasPrefix:@"Shortcut"]) {
+        if ([keyPath isEqualToString:kMBO_Preference_KeyBindings]) {
             [self compileKeyActionMap];
         }
     }
@@ -362,22 +327,14 @@
 - (void)compileKeyActionMap {
     bzero(keyActionMap, sizeof(keyActionMap));
 
-    CGKeyCode keyCode = 0;
+    NSLog(@"compileActionKeyMap()");
 
-    NSLog(@"compileActionKeyMap() %@=%@", kMBO_Shortcut_Pause, self.pauseShortcut);
-
-    if (self.pauseShortcut != NULL) {
-        keyCode = self.pauseShortcut.keyCode % kMBO_MaxKeyCode;
-        keyActionMap[keyCode].modifierFlags = self.pauseShortcut.modifierFlags;
-        keyActionMap[keyCode].action = kMBO_Pause;
-    }
-
-    NSLog(@"compileActionKeyMap() %@=%@", kMBO_Shortcut_IgnoreList, self.ignoreKeys);
-
-    for (MASShortcut *ignoreKey in self.ignoreKeys) {
-        keyCode = ignoreKey.keyCode % kMBO_MaxKeyCode;
-        keyActionMap[keyCode].modifierFlags = ignoreKey.modifierFlags;
-        keyActionMap[keyCode].action = kMBO_Ignore;
+    for (id idx in self.keyBindings) {
+        MBOKeybinding *key = [self.keyBindings objectForKey:idx];
+        NSLog(@"compileActionKeyMap() %@", key.debugDescription);
+        CGKeyCode keyCode = key.keyCode % kMBO_MaxKeyCode;
+        keyActionMap[keyCode].modifierFlags = key.modifierFlags;
+        keyActionMap[keyCode].action = key.action;
     }
 }
 
@@ -477,10 +434,10 @@
         if (keycode < kMBO_MaxKeyCode) {
             keyActionMap_t *km = &keyActionMap[keycode];
 
-            if (km->action == kMBO_Pause) {
+            if (km->action == kMBOKeybindingActionToggleForwarding) {
                 if (eventType == kCGEventKeyDown) {
                     ignoreEvents = !ignoreEvents;
-                    NSLog(@"kMBO_Pause(): tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
+                    NSLog(@"kMBOKeybindingActionToggleForwarding: tapKeyboardCallbackWithProxy(): ignoreEvents=%d", ignoreEvents);
 
                     if (!ignoreEvents) {
                         [self scanForTargetApplications];
@@ -492,7 +449,7 @@
             }
 
             // TODO: Check ->flagsMask (need to support elsewhere too)
-            if (km->action == kMBO_Ignore) {
+            if (km->action == kMBOKeybindingActionIgnore) {
                 return event;
             }
         }
@@ -857,15 +814,7 @@ void axObserverCallback(AXObserverRef observer, AXUIElementRef elementRef, CFStr
     NSLog(@"applicationShouldTerminate(%@)", sender);
     [[NSUserDefaults standardUserDefaults] synchronize];
     [self shutDownEventTaps];
-
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-
-    for(NSString *key in [defaults dictionaryRepresentation]) {
-        if ([key hasPrefix:@"Shortcut"]) {
-            [defaults removeObserver:self forKeyPath:key context:nil];
-        }
-    }
-
+    [[NSUserDefaults standardUserDefaults] removeObserver:self forKeyPath:kMBO_Preference_KeyBindings context:nil];
     return NSTerminateNow;
 }
 

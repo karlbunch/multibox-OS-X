@@ -13,6 +13,7 @@
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		CB090B241DD8836800CF8CDC /* MBOKeybinding.m in Sources */ = {isa = PBXBuildFile; fileRef = CB090B231DD8836800CF8CDC /* MBOKeybinding.m */; };
 		CB9625A41DC4C96900507F04 /* MBOPreferencesPane.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */; };
 		CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = CBE052CB1DBBD81700D541E8 /* Credits.rtf */; };
 		CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */ = {isa = PBXBuildFile; fileRef = CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */; };
@@ -33,6 +34,8 @@
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* MultiBoxOSX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultiBoxOSX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A931F66D462C2749F56A2249 /* Pods_MultiBoxOSX.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MultiBoxOSX.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB090B221DD8836800CF8CDC /* MBOKeybinding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOKeybinding.h; sourceTree = "<group>"; };
+		CB090B231DD8836800CF8CDC /* MBOKeybinding.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOKeybinding.m; sourceTree = "<group>"; };
 		CB9625A21DC4C96900507F04 /* MBOPreferencesPane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOPreferencesPane.h; sourceTree = "<group>"; };
 		CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOPreferencesPane.m; sourceTree = "<group>"; };
 		CB9625A51DC4CE7500507F04 /* Constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Constants.h; sourceTree = "<group>"; };
@@ -60,6 +63,8 @@
 				CB9625A51DC4CE7500507F04 /* Constants.h */,
 				43CAA1FF0FAC32110026C6DD /* MainController.h */,
 				43CAA2000FAC32110026C6DD /* MainController.m */,
+				CB090B221DD8836800CF8CDC /* MBOKeybinding.h */,
+				CB090B231DD8836800CF8CDC /* MBOKeybinding.m */,
 				CB9625A21DC4C96900507F04 /* MBOPreferencesPane.h */,
 				CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */,
 			);
@@ -261,6 +266,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CB090B241DD8836800CF8CDC /* MBOKeybinding.m in Sources */,
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
 				43CAA2010FAC32110026C6DD /* MainController.m in Sources */,
 				CB9625A41DC4C96900507F04 /* MBOPreferencesPane.m in Sources */,

@@ -7,6 +7,7 @@
 //
 
 #import "MBOPreferencesPane.h"
+#import "MainController.h"
 
 @implementation MBOPreferencesPane
 
@@ -33,7 +34,38 @@
         }
     }
 
-    [pauseShortcut setAssociatedUserDefaultsKey:kMBO_Shortcut_Pause];
+    // TODO FIX ME, Ugly hack but it works for now
+    MainController *mainController = (MainController *)[[NSApplication sharedApplication] delegate];
+
+    for (id idx in mainController.keyBindings) {
+        MBOKeybinding *key = [mainController.keyBindings objectForKey:idx];
+
+        if (key.action == kMBOKeybindingActionToggleForwarding) {
+            [pauseShortcut setShortcutValue:key];
+        }
+    }
+
+    [pauseShortcut setShortcutValueChange:^(MASShortcutView *sender) {
+        NSMapTable *newBindings = mainController.keyBindings;
+        MASShortcut *shortCut = sender.shortcutValue;
+        MBOKeybinding *newKey = [MBOKeybinding shortcutWithKeyCode:shortCut.keyCode modifierFlags:shortCut.modifierFlags bindingAction:kMBOKeybindingActionToggleForwarding];
+
+        NSLog(@"shortcut changed to %@", newKey.debugDescription);
+
+        for (id idx in mainController.keyBindings) {
+            MBOKeybinding *thisKey = [mainController.keyBindings objectForKey:idx];
+
+            if (thisKey.action == kMBOKeybindingActionToggleForwarding) {
+                [newBindings removeObjectForKey:idx];
+            }
+        }
+
+        [newBindings setObject:newKey forKey:@(sender.shortcutValue.keyCode)];
+
+        NSLog(@"newBindings = %@", newBindings);
+
+        [mainController setKeyBindings:newBindings];
+    }];
 
     [super makeKeyAndOrderFront:sender];
 }

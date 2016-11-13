@@ -24,18 +24,11 @@
 
 #import <Cocoa/Cocoa.h>
 #import <MASShortcut/Shortcut.h>
-
-#define kMBO_MaxKeyCode 256
-
-enum keyActionFunction {
-    kMBO_Forward = 1,
-    kMBO_Pause   = 2,
-    kMBO_Ignore  = 3,
-};
+#import "MBOKeybinding.h"
 
 typedef struct {
     uint64_t modifierFlags;
-    enum keyActionFunction action;
+    kMBOKeybindingAction action;
 } keyActionMap_t;
 
 @interface MainController : NSObject <NSApplicationDelegate> {
@@ -58,8 +51,7 @@ typedef struct {
 @property (atomic, strong) NSString *targetApplication;
 @property (atomic, strong) NSString *targetAppPath;
 @property (atomic, strong) NSArray *favoriteLayout;
-@property (atomic, strong) MASShortcut *pauseShortcut;
-@property (atomic, strong) NSArray *ignoreKeys;
+@property (atomic, strong) NSMapTable *keyBindings;
 
 #if DEBUG
 @property (atomic, strong) NSTextField *debugLabel;

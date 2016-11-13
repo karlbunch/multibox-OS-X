@@ -15,11 +15,15 @@
 // Set to 1 for debugging/logging of key events
 #define MULTIBOXOSX_LOGKEYS 0
 
+// Largest supported KeyCode value
+#define kMBO_MaxKeyCode 256
+
+static NSString * const kMBO_CurrentPreferencesVersion = @"2";
+static NSString * const kMBO_Preference_Version = @"preferencesVersion";
 static NSString * const kMBO_Preference_TargetApplication = @"targetApplication";
 static NSString * const kMBO_Preference_TargetAppPath = @"targetAppPath";
 static NSString * const kMBO_Preference_FavoriteLayout = @"favoriteLayout";
 static NSString * const kMBO_InstanceNumber = @"instanceNumber";
-static NSString * const kMBO_Shortcut_Pause = @"ShortcutPause";
-static NSString * const kMBO_Shortcut_IgnoreList = @"ShortcutIgnoreList";
+static NSString * const kMBO_Preference_KeyBindings = @"KeyBindings";
 
 #endif /* Constants_h */
