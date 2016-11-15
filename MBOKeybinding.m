@@ -9,6 +9,7 @@
 #import "MBOKeybinding.h"
 
 static NSString *MBOKeybindingAction = @"Action";
+static NSString *MBOKeybindingBound = @"Bound";
 
 @implementation MBOKeybinding
 
@@ -18,6 +19,18 @@ static NSString *MBOKeybindingAction = @"Action";
     if (self) {
         [super initWithKeyCode:code modifierFlags:flags];
         self.action = action;
+        self.isBound = YES;
+    }
+
+    return self;
+}
+
+-(instancetype)initWithAction:(kMBOKeybindingAction)action {
+    self = [super init];
+
+    if (self) {
+        self.action = action;
+        self.isBound = NO;
     }
 
     return self;
@@ -27,14 +40,25 @@ static NSString *MBOKeybindingAction = @"Action";
     return [[self alloc] initWithKeyCode:code modifierFlags:flags bindingAction:action];
 }
 
++(instancetype)unboundShortcutWithAction:(kMBOKeybindingAction)action {
+    return [[self alloc] initWithAction:action];
+}
+
 -(NSString *)debugDescription {
-    return [NSString stringWithFormat:@"[%@ keycode: %lu (%@), modifierFlags: %lu, action: %@]",
-            [self className],
-            (unsigned long)self.keyCode,
-            self.keyCodeString,
-            (unsigned long)self.modifierFlags,
-            [MBOKeybinding NSStringWithMBOKeybindingAction:self.action]
-    ];
+    if (self.isBound) {
+        return [NSString stringWithFormat:@"[%@ keycode: %lu (%@), modifierFlags: %lu, action: %@]",
+                [self className],
+                (unsigned long)self.keyCode,
+                self.keyCodeString,
+                (unsigned long)self.modifierFlags,
+                [MBOKeybinding NSStringWithMBOKeybindingAction:self.action]
+                ];
+    } else {
+        return [NSString stringWithFormat:@"[%@ <Unbound>, action: %@]",
+                [self className],
+                [MBOKeybinding NSStringWithMBOKeybindingAction:self.action]
+                ];
+    }
 }
 
 +(NSString *)NSStringWithMBOKeybindingAction:(kMBOKeybindingAction)action {
@@ -53,16 +77,16 @@ static NSString *MBOKeybindingAction = @"Action";
 -(void)encodeWithCoder:(NSCoder *)aCoder {
     [super encodeWithCoder:aCoder];
     [aCoder encodeInteger:self.action forKey:MBOKeybindingAction];
+    [aCoder encodeBool:self.isBound forKey:MBOKeybindingBound];
 }
 
 -(instancetype)initWithCoder:(NSCoder *)aDecoder {
     self = [super init];
     if (self) {
         [super initWithCoder:aDecoder];
-        
         NSInteger value = [aDecoder decodeIntegerForKey:MBOKeybindingAction];
-
         self.action = (NSUInteger)(value) % kMBO_MaxKeyCode;
+        self.isBound = [aDecoder decodeBoolForKey:MBOKeybindingBound];
     }
     return self;
 }

@@ -25,6 +25,7 @@
 #import <Cocoa/Cocoa.h>
 #import <MASShortcut/Shortcut.h>
 #import "MBOKeybinding.h"
+#import "MBOPreferencesWindowController.h"
 
 typedef struct {
     uint64_t modifierFlags;
@@ -35,6 +36,7 @@ typedef struct {
 	IBOutlet NSWindow *mainWindow;
     IBOutlet NSButton *toggleButton;
     IBOutlet NSLevelIndicator *targetIndicator;
+    MBOPreferencesWindowController *preferencesWindow;
 
     keyActionMap_t keyActionMap[kMBO_MaxKeyCode];
 
@@ -59,5 +61,7 @@ typedef struct {
 
 - (IBAction)enableButtonClicked:(id)sender;
 - (IBAction)levelIndicatorClicked:(id)sender;
+- (IBAction)menuActionPreferences:(id)sender;
+-(void)preferencesWindowWillClose:(id)sender;
 
 @end

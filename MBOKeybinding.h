@@ -18,11 +18,14 @@ typedef NS_ENUM(unsigned short, kMBOKeybindingAction) {
 @interface MBOKeybinding : MASShortcut <NSSecureCoding, NSCopying>
 
 @property (atomic) kMBOKeybindingAction action;
+@property (nonatomic) BOOL isBound;
 
 -(NSString *)debugDescription;
 -(instancetype)initWithKeyCode:(NSUInteger)code modifierFlags:(NSUInteger)flags bindingAction:(kMBOKeybindingAction)action;
+-(instancetype)initWithAction:(kMBOKeybindingAction)action;
 
 +(instancetype)shortcutWithKeyCode:(NSUInteger)code modifierFlags:(NSUInteger)flags bindingAction:(kMBOKeybindingAction)action;
++(instancetype)unboundShortcutWithAction:(kMBOKeybindingAction)action;
 +(NSString *)NSStringWithMBOKeybindingAction:(kMBOKeybindingAction)action;
 
 @end

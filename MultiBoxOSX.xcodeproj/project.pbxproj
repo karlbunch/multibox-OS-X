@@ -14,7 +14,13 @@
 		8D11072D0486CEB800E47090 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		CB090B241DD8836800CF8CDC /* MBOKeybinding.m in Sources */ = {isa = PBXBuildFile; fileRef = CB090B231DD8836800CF8CDC /* MBOKeybinding.m */; };
-		CB9625A41DC4C96900507F04 /* MBOPreferencesPane.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */; };
+		CB10BE881DD8C4BE00AA52B8 /* PreferencesWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = CB10BE871DD8C4BE00AA52B8 /* PreferencesWindow.xib */; };
+		CB10BE931DD8ECF400AA52B8 /* MBOKeybindingViewItem.m in Sources */ = {isa = PBXBuildFile; fileRef = CB10BE911DD8ECF400AA52B8 /* MBOKeybindingViewItem.m */; };
+		CB10BE941DD8ECF400AA52B8 /* MBOKeybindingViewItem.xib in Resources */ = {isa = PBXBuildFile; fileRef = CB10BE921DD8ECF400AA52B8 /* MBOKeybindingViewItem.xib */; };
+		CB10BE9A1DD9050B00AA52B8 /* MBOKeybindingHeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = CB10BE981DD9050B00AA52B8 /* MBOKeybindingHeaderView.m */; };
+		CB10BE9B1DD9050B00AA52B8 /* MBOKeybindingHeaderView.xib in Resources */ = {isa = PBXBuildFile; fileRef = CB10BE991DD9050B00AA52B8 /* MBOKeybindingHeaderView.xib */; };
+		CB5EB5581DDB430A0029D3CD /* MBOShortcutValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = CB5EB5571DDB430A0029D3CD /* MBOShortcutValidator.m */; };
+		CB9625A41DC4C96900507F04 /* MBOPreferencesWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = CB9625A31DC4C96900507F04 /* MBOPreferencesWindowController.m */; };
 		CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = CBE052CB1DBBD81700D541E8 /* Credits.rtf */; };
 		CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */ = {isa = PBXBuildFile; fileRef = CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */; };
 /* End PBXBuildFile section */
@@ -36,8 +42,17 @@
 		A931F66D462C2749F56A2249 /* Pods_MultiBoxOSX.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MultiBoxOSX.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB090B221DD8836800CF8CDC /* MBOKeybinding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOKeybinding.h; sourceTree = "<group>"; };
 		CB090B231DD8836800CF8CDC /* MBOKeybinding.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOKeybinding.m; sourceTree = "<group>"; };
-		CB9625A21DC4C96900507F04 /* MBOPreferencesPane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOPreferencesPane.h; sourceTree = "<group>"; };
-		CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOPreferencesPane.m; sourceTree = "<group>"; };
+		CB10BE871DD8C4BE00AA52B8 /* PreferencesWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PreferencesWindow.xib; sourceTree = "<group>"; };
+		CB10BE901DD8ECF400AA52B8 /* MBOKeybindingViewItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOKeybindingViewItem.h; sourceTree = "<group>"; };
+		CB10BE911DD8ECF400AA52B8 /* MBOKeybindingViewItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOKeybindingViewItem.m; sourceTree = "<group>"; };
+		CB10BE921DD8ECF400AA52B8 /* MBOKeybindingViewItem.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MBOKeybindingViewItem.xib; sourceTree = "<group>"; };
+		CB10BE971DD9050B00AA52B8 /* MBOKeybindingHeaderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOKeybindingHeaderView.h; sourceTree = "<group>"; };
+		CB10BE981DD9050B00AA52B8 /* MBOKeybindingHeaderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOKeybindingHeaderView.m; sourceTree = "<group>"; };
+		CB10BE991DD9050B00AA52B8 /* MBOKeybindingHeaderView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MBOKeybindingHeaderView.xib; sourceTree = "<group>"; };
+		CB5EB5561DDB430A0029D3CD /* MBOShortcutValidator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOShortcutValidator.h; sourceTree = "<group>"; };
+		CB5EB5571DDB430A0029D3CD /* MBOShortcutValidator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOShortcutValidator.m; sourceTree = "<group>"; };
+		CB9625A21DC4C96900507F04 /* MBOPreferencesWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MBOPreferencesWindowController.h; sourceTree = "<group>"; };
+		CB9625A31DC4C96900507F04 /* MBOPreferencesWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MBOPreferencesWindowController.m; sourceTree = "<group>"; };
 		CB9625A51DC4CE7500507F04 /* Constants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Constants.h; sourceTree = "<group>"; };
 		CBE052CB1DBBD81700D541E8 /* Credits.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
 		CBE0EA941DA53C4F006416E3 /* MultiBoxOSX.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = MultiBoxOSX.icns; sourceTree = "<group>"; };
@@ -65,8 +80,14 @@
 				43CAA2000FAC32110026C6DD /* MainController.m */,
 				CB090B221DD8836800CF8CDC /* MBOKeybinding.h */,
 				CB090B231DD8836800CF8CDC /* MBOKeybinding.m */,
-				CB9625A21DC4C96900507F04 /* MBOPreferencesPane.h */,
-				CB9625A31DC4C96900507F04 /* MBOPreferencesPane.m */,
+				CB9625A21DC4C96900507F04 /* MBOPreferencesWindowController.h */,
+				CB9625A31DC4C96900507F04 /* MBOPreferencesWindowController.m */,
+				CB10BE901DD8ECF400AA52B8 /* MBOKeybindingViewItem.h */,
+				CB10BE911DD8ECF400AA52B8 /* MBOKeybindingViewItem.m */,
+				CB10BE971DD9050B00AA52B8 /* MBOKeybindingHeaderView.h */,
+				CB10BE981DD9050B00AA52B8 /* MBOKeybindingHeaderView.m */,
+				CB5EB5561DDB430A0029D3CD /* MBOShortcutValidator.h */,
+				CB5EB5571DDB430A0029D3CD /* MBOShortcutValidator.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -126,6 +147,9 @@
 				8D1107310486CEB800E47090 /* Info.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 				1DDD58140DA1D0A300B32029 /* MainMenu.xib */,
+				CB10BE871DD8C4BE00AA52B8 /* PreferencesWindow.xib */,
+				CB10BE921DD8ECF400AA52B8 /* MBOKeybindingViewItem.xib */,
+				CB10BE991DD9050B00AA52B8 /* MBOKeybindingHeaderView.xib */,
 				CBE052CB1DBBD81700D541E8 /* Credits.rtf */,
 			);
 			name = Resources;
@@ -204,10 +228,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CB10BE941DD8ECF400AA52B8 /* MBOKeybindingViewItem.xib in Resources */,
+				CB10BE881DD8C4BE00AA52B8 /* PreferencesWindow.xib in Resources */,
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
 				1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */,
 				CBE0EA951DA53C4F006416E3 /* MultiBoxOSX.icns in Resources */,
 				CBE052CC1DBBD81700D541E8 /* Credits.rtf in Resources */,
+				CB10BE9B1DD9050B00AA52B8 /* MBOKeybindingHeaderView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,10 +293,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CB10BE931DD8ECF400AA52B8 /* MBOKeybindingViewItem.m in Sources */,
 				CB090B241DD8836800CF8CDC /* MBOKeybinding.m in Sources */,
+				CB10BE9A1DD9050B00AA52B8 /* MBOKeybindingHeaderView.m in Sources */,
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
 				43CAA2010FAC32110026C6DD /* MainController.m in Sources */,
-				CB9625A41DC4C96900507F04 /* MBOPreferencesPane.m in Sources */,
+				CB5EB5581DDB430A0029D3CD /* MBOShortcutValidator.m in Sources */,
+				CB9625A41DC4C96900507F04 /* MBOPreferencesWindowController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

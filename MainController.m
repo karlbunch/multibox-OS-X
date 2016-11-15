@@ -105,6 +105,21 @@
 #endif // DEBUG
 }
 
+- (IBAction)menuActionPreferences:(id)sender {
+    if (preferencesWindow != NULL) {
+        [preferencesWindow release];
+        preferencesWindow = NULL;
+    }
+
+    preferencesWindow = [[MBOPreferencesWindowController alloc] initWithController:self];
+    [preferencesWindow showWindow:self];
+}
+
+-(void)preferencesWindowWillClose:(id)sender {
+    [preferencesWindow release];
+    preferencesWindow = NULL;
+}
+
 -(NSString *)targetApplication {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetApplication];
 }
@@ -262,6 +277,9 @@
     if ([object isKindOfClass:[NSUserDefaults class]]) {
         if ([keyPath isEqualToString:kMBO_Preference_KeyBindings]) {
             [self compileKeyActionMap];
+            if (preferencesWindow != NULL) {
+                [preferencesWindow keyBindingsChanged];
+            }
         }
     }
 }
