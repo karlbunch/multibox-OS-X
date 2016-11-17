@@ -33,9 +33,9 @@ typedef struct {
 } keyActionMap_t;
 
 @interface MainController : NSObject <NSApplicationDelegate> {
-	IBOutlet NSWindow *mainWindow;
-    IBOutlet NSButton *toggleButton;
-    IBOutlet NSLevelIndicator *targetIndicator;
+	IBOutlet NSWindow * __weak mainWindow;
+    IBOutlet NSButton * __weak toggleButton;
+    IBOutlet NSLevelIndicator * __weak targetIndicator;
     MBOPreferencesWindowController *preferencesWindow;
 
     keyActionMap_t keyActionMap[kMBO_MaxKeyCode];
@@ -50,10 +50,10 @@ typedef struct {
     NSMutableDictionary *targetApplicationsByPID;
 }
 
-@property (atomic, strong) NSString *targetApplication;
-@property (atomic, strong) NSString *targetAppPath;
-@property (atomic, strong) NSArray *favoriteLayout;
-@property (atomic, strong) NSMapTable *keyBindings;
+@property (nonatomic, weak) NSString *targetApplication;
+@property (nonatomic, weak) NSString *targetAppPath;
+@property (nonatomic, weak) NSArray *favoriteLayout;
+@property (nonatomic, weak) NSMapTable *keyBindings;
 
 #if DEBUG
 @property (atomic, strong) NSTextField *debugLabel;

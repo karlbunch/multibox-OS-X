@@ -9,7 +9,6 @@
         <customObject id="-2" userLabel="File's Owner" customClass="MBOPreferencesWindowController">
             <connections>
                 <outlet property="keyBindingsCollectionView" destination="n33-Kj-MaX" id="YUQ-kB-FAj"/>
-                <outlet property="pathTextField" destination="Fsz-BU-Hbc" id="CaP-dE-Lfc"/>
                 <outlet property="targetAppVersionTextField" destination="W5X-pl-E2n" id="V0L-1H-SWF"/>
             </connections>
         </customObject>

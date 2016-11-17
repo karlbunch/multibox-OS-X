@@ -11,6 +11,6 @@
 
 @interface MBOKeybindingViewItem : NSCollectionViewItem
 
-@property (assign) IBOutlet MASShortcutView *shortcutView;
+@property (nonatomic, weak) IBOutlet MASShortcutView *shortcutView;
 
 @end

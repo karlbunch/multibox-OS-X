@@ -107,7 +107,6 @@
 
 - (IBAction)menuActionPreferences:(id)sender {
     if (preferencesWindow != NULL) {
-        [preferencesWindow release];
         preferencesWindow = NULL;
     }
 
@@ -116,7 +115,6 @@
 }
 
 -(void)preferencesWindowWillClose:(id)sender {
-    [preferencesWindow release];
     preferencesWindow = NULL;
 }
 
@@ -511,7 +509,7 @@
 }
 
 CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-    MainController *mc = (MainController *) refcon;
+    MainController *mc = (__bridge MainController *) refcon;
 
     return [mc tapKeyboardCallbackWithProxy:proxy type:type event:event];
 }
@@ -520,7 +518,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     CGEventMask maskKeyboard = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp) | CGEventMaskBit(kCGEventFlagsChanged);
 
     machPortKeyboard = CGEventTapCreate(kCGSessionEventTap, kCGTailAppendEventTap, kCGEventTapOptionDefault,
-                                        maskKeyboard, MyKeyboardEventTapCallBack, self);
+                                        maskKeyboard, MyKeyboardEventTapCallBack, (__bridge void * _Nullable)(self));
 
     machPortRunLoopSourceRefKeyboard = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, machPortKeyboard, 0);
 
@@ -622,10 +620,9 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     for (CFIndex i = 0; i < CFArrayGetCount(applicationWindows); i++) {
         windowRef = CFArrayGetValueAtIndex(applicationWindows, i);
 
-        NSString *title = NULL;
+        CFStringRef title = NULL;
         AXUIElementCopyAttributeValue(windowRef, kAXTitleAttribute, (CFTypeRef *)&title);
-
-        if ([title length] > 0) {
+        if (CFStringGetLength(title) > 0) {
             break;
         }
     }
@@ -705,7 +702,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
         if (AXUIElementCopyAttributeValue(winRef, kAXPositionAttribute, &curPositionRef) == kAXErrorSuccess)
             AXValueGetValue(curPositionRef, kAXValueCGPointType, &curPosition);
 #if DEBUG
-        NSString *title = NULL;
+        CFStringRef title = NULL;
         AXUIElementCopyAttributeValue(winRef, kAXTitleAttribute, (CFTypeRef *)&title);
 
         NSLog(@"setupTargetApplicationWithPID(%d): Window #%ld = [%@] (%f, %f) %f x %f", targetPID, winNum, title, curPosition.x, curPosition.y, curSize.width, curSize.height);
@@ -804,7 +801,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
     }
     
     NSURL *appURL = [NSURL fileURLWithPath:self.targetAppPath];
-    NSMutableDictionary *appConfig = CFBridgingRelease([[NSMutableDictionary alloc] init]);
+    NSMutableDictionary *appConfig = [[NSMutableDictionary alloc] init];
     NSRunningApplication *newApp = [[NSWorkspace sharedWorkspace] launchApplicationAtURL:appURL options:NSWorkspaceLaunchNewInstance configuration:appConfig error:nil];
 #pragma unused(newApp)
     NSLog(@"Launched %@ pid: %d", appURL, [newApp processIdentifier]);
@@ -846,11 +843,9 @@ void axObserverCallback(AXObserverRef observer, AXUIElementRef elementRef, CFStr
 -(void)dealloc {
 #if DEBUG
     if (_debugLabel != NULL) {
-        [_debugLabel release];
         _debugLabel = NULL;
     }
 #endif // DEBUG
-    [super dealloc];
 }
 
 @end

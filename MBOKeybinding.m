@@ -14,10 +14,9 @@ static NSString *MBOKeybindingBound = @"Bound";
 @implementation MBOKeybinding
 
 -(instancetype)initWithKeyCode:(NSUInteger)code modifierFlags:(NSUInteger)flags bindingAction:(kMBOKeybindingAction)action {
-    self = [super init];
+    self = [super initWithKeyCode:code modifierFlags:flags];
 
     if (self) {
-        [super initWithKeyCode:code modifierFlags:flags];
         self.action = action;
         self.isBound = YES;
     }
@@ -81,9 +80,8 @@ static NSString *MBOKeybindingBound = @"Bound";
 }
 
 -(instancetype)initWithCoder:(NSCoder *)aDecoder {
-    self = [super init];
+    self = [super initWithCoder:aDecoder];
     if (self) {
-        [super initWithCoder:aDecoder];
         NSInteger value = [aDecoder decodeIntegerForKey:MBOKeybindingAction];
         self.action = (NSUInteger)(value) % kMBO_MaxKeyCode;
         self.isBound = [aDecoder decodeBoolForKey:MBOKeybindingBound];

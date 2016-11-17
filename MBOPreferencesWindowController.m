@@ -53,9 +53,9 @@
 -(void)buildKeybindingCollection {
     keyBindingsBySection = [[NSMutableArray alloc] init];
 
-    [keyBindingsBySection addObject:[[[NSMutableArray alloc] init] autorelease]];
-    [keyBindingsBySection addObject:[[[NSMutableArray alloc] init] autorelease]];
-    [keyBindingsBySection addObject:[[[NSMutableArray alloc] init] autorelease]];
+    [keyBindingsBySection addObject:[[NSMutableArray alloc] init]];
+    [keyBindingsBySection addObject:[[NSMutableArray alloc] init]];
+    [keyBindingsBySection addObject:[[NSMutableArray alloc] init]];
 
     MainController *ctlr = (MainController *)self->appController;
 
@@ -71,6 +71,10 @@
     for (MBOKeybinding *key in keys) {
         [keyBindingsBySection[[self actionToSection:key.action]] addObject:key];
     }
+
+    [keyBindingsBySection[0] addObject:[MBOKeybinding unboundShortcutWithAction:[self sectionToAction:0]]];
+    [keyBindingsBySection[1] addObject:[MBOKeybinding unboundShortcutWithAction:[self sectionToAction:1]]];
+    [keyBindingsBySection[2] addObject:[MBOKeybinding unboundShortcutWithAction:[self sectionToAction:2]]];
 }
 
 -(NSInteger)actionToSection:(kMBOKeybindingAction )action {
@@ -98,32 +102,29 @@
 }
 
 -(NSInteger)collectionView:(NSCollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return [self->keyBindingsBySection[section] count] + 1;
+    return [self->keyBindingsBySection[section] count];
 }
 
 -(NSCollectionViewItem *)collectionView:(NSCollectionView *)collectionView itemForRepresentedObjectAtIndexPath:(NSIndexPath *)indexPath {
-    NSCollectionViewItem *item = [collectionView makeItemWithIdentifier:@"MBOKeybindingViewItem" forIndexPath:indexPath];
+    NSCollectionViewItem * __weak item = [collectionView makeItemWithIdentifier:@"MBOKeybindingViewItem" forIndexPath:indexPath];
 
     if (indexPath.item < [keyBindingsBySection[indexPath.section] count]) {
         item.representedObject = self->keyBindingsBySection[indexPath.section][indexPath.item];
-    } else {
-        item.representedObject = [MBOKeybinding unboundShortcutWithAction:[self sectionToAction:indexPath.section]];
     }
 
     return item;
 }
 
 - (nonnull NSView *)collectionView:(nonnull NSCollectionView *)collectionView viewForSupplementaryElementOfKind:(nonnull NSString *)kind atIndexPath:(nonnull NSIndexPath *)indexPath {
-    id view = nil;
-
     if ([kind isEqual:NSCollectionElementKindSectionHeader]) {
-        view = [collectionView makeSupplementaryViewOfKind:kind withIdentifier:@"MBOKeybindingHeaderView" forIndexPath:indexPath];
-        MBOKeybindingHeaderView *headerView = view;
+        NSView * __weak view = [collectionView makeSupplementaryViewOfKind:kind withIdentifier:@"MBOKeybindingHeaderView" forIndexPath:indexPath];
+        MBOKeybindingHeaderView *headerView = (MBOKeybindingHeaderView *)view;
         NSString *title = [NSString stringWithFormat:@"%@ Keys:", [MBOKeybinding NSStringWithMBOKeybindingAction:[self sectionToAction:indexPath.section]]];
         [headerView setSectionTitle:title];
+        return view;
     }
 
-    return view;
+    return nil;
 }
 
 #pragma mark NSCollectionViewDelegateFlowLayout Methods
@@ -185,7 +186,6 @@
         [alert setInformativeText:@"Failed to open the Applcation's Bundle."];
         [alert setAlertStyle:NSWarningAlertStyle];
         [alert runModal];
-        [alert release];
         return;
     }
 

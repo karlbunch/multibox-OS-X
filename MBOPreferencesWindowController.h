@@ -10,10 +10,10 @@
 #import <MASShortcut/Shortcut.h>
 
 @interface MBOPreferencesWindowController : NSWindowController <NSWindowDelegate, NSCollectionViewDataSource, NSCollectionViewDelegate, NSCollectionViewDelegateFlowLayout> {
-    IBOutlet NSTextField *targetAppVersionTextField;
-    IBOutlet NSCollectionView *keyBindingsCollectionView;
+    IBOutlet NSTextField __weak *targetAppVersionTextField;
+    IBOutlet NSCollectionView __weak  *keyBindingsCollectionView;
     NSMutableArray *keyBindingsBySection;
-    id appController;
+    __weak id appController;
 }
 
 -(IBAction)browseButtonClicked:(id)sender;
