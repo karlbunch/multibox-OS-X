@@ -26,4 +26,7 @@ static NSString * const kMBO_Preference_FavoriteLayout = @"favoriteLayout";
 static NSString * const kMBO_InstanceNumber = @"instanceNumber";
 static NSString * const kMBO_Preference_KeyBindings = @"KeyBindings";
 
+// Notifications
+static NSString * const kMBO_Notification_RecordKeysButtonClicked = @"MBONoticeRecordKeysButtonClicked";
+
 #endif /* Constants_h */

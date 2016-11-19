@@ -27,41 +27,17 @@
 #import "MBOKeybinding.h"
 #import "MBOPreferencesWindowController.h"
 
-typedef struct {
-    uint64_t modifierFlags;
-    kMBOKeybindingAction action;
-} keyActionMap_t;
-
-@interface MainController : NSObject <NSApplicationDelegate> {
-	IBOutlet NSWindow * __weak mainWindow;
-    IBOutlet NSButton * __weak toggleButton;
-    IBOutlet NSLevelIndicator * __weak targetIndicator;
-    MBOPreferencesWindowController *preferencesWindow;
-
-    keyActionMap_t keyActionMap[kMBO_MaxKeyCode];
-
-	CFMachPortRef machPortKeyboard;
-	CFRunLoopSourceRef machPortRunLoopSourceRefKeyboard;
-
-    BOOL isTrusted;
-	BOOL ignoreEvents;
-    BOOL autoExit;
-    NSInteger numPendingLaunch;
-    NSMutableDictionary *targetApplicationsByPID;
-}
-
+@interface MainController : NSObject <NSApplicationDelegate>
 @property (nonatomic, weak) NSString *targetApplication;
 @property (nonatomic, weak) NSString *targetAppPath;
 @property (nonatomic, weak) NSArray *favoriteLayout;
-@property (nonatomic, weak) NSMapTable *keyBindings;
-
-#if DEBUG
-@property (atomic, strong) NSTextField *debugLabel;
-#endif // DEBUG
+@property (nonatomic, weak) NSDictionary *keyBindingsDictionaryRepresentation;
 
 - (IBAction)enableButtonClicked:(id)sender;
 - (IBAction)levelIndicatorClicked:(id)sender;
 - (IBAction)menuActionPreferences:(id)sender;
 -(void)preferencesWindowWillClose:(id)sender;
+-(void)addKeyBinding:(MBOKeybinding *)newKey;
+-(void)removeKeyBinding:(MBOKeybinding *)originalKey;
 
 @end

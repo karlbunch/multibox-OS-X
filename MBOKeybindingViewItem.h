@@ -9,7 +9,7 @@
 #import <Cocoa/Cocoa.h>
 #import "MBOKeybinding.h"
 
-@interface MBOKeybindingViewItem : NSCollectionViewItem
+@interface MBOKeybindingViewItem : NSCollectionViewItem <NSCollectionViewElement>
 
 @property (nonatomic, weak) IBOutlet MASShortcutView *shortcutView;
 

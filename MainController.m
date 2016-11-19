@@ -22,8 +22,36 @@
 
 #include <ApplicationServices/ApplicationServices.h>
 #import <Carbon/Carbon.h>
-
 #import "MainController.h"
+
+typedef struct {
+    uint64_t modifierFlags;
+    kMBOKeybindingAction action;
+} keyActionMap_t;
+
+@interface MainController () {
+    IBOutlet NSWindow * __weak mainWindow;
+    IBOutlet NSButton * __weak toggleButton;
+    IBOutlet NSLevelIndicator * __weak targetIndicator;
+    MBOPreferencesWindowController *preferencesWindow;
+
+    keyActionMap_t keyActionMap[kMBO_MaxKeyCode];
+
+    CFMachPortRef machPortKeyboard;
+    CFRunLoopSourceRef machPortRunLoopSourceRefKeyboard;
+
+    BOOL isTrusted;
+    BOOL ignoreEvents;
+    BOOL autoExit;
+    NSInteger numPendingLaunch;
+    NSMutableDictionary *targetApplicationsByPID;
+}
+
+#if DEBUG
+@property (nonatomic, strong) NSTextField *debugLabel;
+#endif // DEBUG
+
+@end
 
 @implementation MainController
 
@@ -215,6 +243,12 @@
     [self setFavoriteLayout:newLayout];
 }
 
+-(NSDictionary *)keyBindingsDictionaryRepresentation {
+    NSMapTable *bindings = [self keyBindings];
+
+    return [bindings dictionaryRepresentation];
+}
+
 -(NSMapTable *)keyBindings {
     id value = [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_KeyBindings];
 
@@ -228,6 +262,18 @@
 
 -(void)setKeyBindings:(NSMapTable *)keyBindings {
     [[NSUserDefaults standardUserDefaults] setValue:[NSKeyedArchiver archivedDataWithRootObject:keyBindings] forKey:kMBO_Preference_KeyBindings];
+}
+
+-(void)addKeyBinding:(MBOKeybinding *)newKey {
+    NSMapTable *newBindings = [[self keyBindings] copy];
+    [newBindings setObject:newKey forKey:@(newKey.keyCode)];
+    [self setKeyBindings:newBindings];
+}
+
+-(void)removeKeyBinding:(MBOKeybinding *)originalKey {
+    NSMapTable *newBindings = [[self keyBindings] copy];
+    [newBindings removeObjectForKey:@(originalKey.keyCode)];
+    [self setKeyBindings:newBindings];
 }
 
 - (void)saveTargetApplicationWithPID:(pid_t)targetPID withDictionary:(NSDictionary *)newEntries {
@@ -838,14 +884,6 @@ void axObserverCallback(AXObserverRef observer, AXUIElementRef elementRef, CFStr
     va_start(args, format);
     NSLogv([format stringByAppendingString:[NSString stringWithFormat:@"UNEXPECTED ERROR: "]], args);
     va_end(args);
-}
-
--(void)dealloc {
-#if DEBUG
-    if (_debugLabel != NULL) {
-        _debugLabel = NULL;
-    }
-#endif // DEBUG
 }
 
 @end

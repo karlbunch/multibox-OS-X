@@ -3,6 +3,7 @@
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="11542"/>
+        <capability name="box content view" minToolsVersion="7.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
@@ -10,20 +11,53 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customView id="Hz6-mo-xeY" customClass="MBOKeybindingHeaderView">
-            <rect key="frame" x="0.0" y="0.0" width="712" height="30"/>
+            <rect key="frame" x="0.0" y="0.0" width="712" height="32"/>
             <autoresizingMask key="autoresizingMask"/>
             <subviews>
-                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3Oa-YM-iDT">
-                    <rect key="frame" x="0.0" y="0.0" width="712" height="30"/>
-                    <autoresizingMask key="autoresizingMask"/>
-                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Section Title:" drawsBackground="YES" id="J4s-bN-Y2T">
-                        <font key="font" metaFont="systemBold" size="16"/>
-                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                        <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
-                    </textFieldCell>
-                </textField>
+                <box boxType="custom" borderType="none" title="headerBackground" titlePosition="noTitle" translatesAutoresizingMaskIntoConstraints="NO" id="UIK-ei-ikU">
+                    <rect key="frame" x="0.0" y="0.0" width="712" height="32"/>
+                    <view key="contentView" id="Nc4-gE-g1R">
+                        <rect key="frame" x="0.0" y="0.0" width="712" height="32"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" tag="101" translatesAutoresizingMaskIntoConstraints="NO" id="3Oa-YM-iDT">
+                                <rect key="frame" x="8" y="7" width="96" height="18"/>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Section Title:" id="J4s-bN-Y2T">
+                                    <font key="font" metaFont="systemBold" size="14"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <button verticalHuggingPriority="750" tag="102" translatesAutoresizingMaskIntoConstraints="NO" id="AoY-Hz-dQN">
+                                <rect key="frame" x="580" y="5" width="125" height="21"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="20" id="3wP-Hr-J6U"/>
+                                    <constraint firstAttribute="width" constant="125" id="ljE-dj-T0I"/>
+                                </constraints>
+                                <buttonCell key="cell" type="recessed" title="Record Keys" bezelStyle="recessed" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="rsi-dQ-mdU">
+                                    <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                                    <font key="font" metaFont="systemBold" size="12"/>
+                                </buttonCell>
+                            </button>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="AoY-Hz-dQN" firstAttribute="centerY" secondItem="3Oa-YM-iDT" secondAttribute="centerY" id="HDU-l4-3GN"/>
+                            <constraint firstItem="3Oa-YM-iDT" firstAttribute="top" secondItem="Nc4-gE-g1R" secondAttribute="top" constant="7" id="IPP-xK-Ffj"/>
+                            <constraint firstAttribute="trailing" secondItem="AoY-Hz-dQN" secondAttribute="trailing" constant="7" id="a2O-7g-Xb9"/>
+                            <constraint firstItem="3Oa-YM-iDT" firstAttribute="leading" secondItem="Nc4-gE-g1R" secondAttribute="leading" constant="10" id="a4G-8X-DUn"/>
+                            <constraint firstAttribute="bottom" secondItem="3Oa-YM-iDT" secondAttribute="bottom" constant="7" id="tqr-nZ-hZo"/>
+                        </constraints>
+                    </view>
+                    <color key="fillColor" name="controlShadowColor" catalog="System" colorSpace="catalog"/>
+                </box>
             </subviews>
-            <point key="canvasLocation" x="16.5" y="48"/>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="UIK-ei-ikU" secondAttribute="bottom" id="0LQ-fb-DR5"/>
+                <constraint firstAttribute="trailing" secondItem="UIK-ei-ikU" secondAttribute="trailing" id="4wa-fs-EIn"/>
+                <constraint firstItem="UIK-ei-ikU" firstAttribute="top" secondItem="Hz6-mo-xeY" secondAttribute="top" id="dvO-RD-y2B"/>
+                <constraint firstItem="UIK-ei-ikU" firstAttribute="leading" secondItem="Hz6-mo-xeY" secondAttribute="leading" id="kRU-jP-nhv"/>
+            </constraints>
+            <point key="canvasLocation" x="16" y="47.5"/>
         </customView>
     </objects>
 </document>

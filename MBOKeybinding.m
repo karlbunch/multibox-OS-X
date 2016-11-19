@@ -89,6 +89,26 @@ static NSString *MBOKeybindingBound = @"Bound";
     return self;
 }
 
+-(NSUInteger)hash {
+    return self.keyCode ^ self.modifierFlags ^ self.action ^ self.isBound;
+}
+
+-(BOOL)isEqual:(id)anObject {
+    if (self == anObject) {
+        return YES;
+    }
+
+    if ([anObject isKindOfClass:[self class]]) {
+        MBOKeybinding *otherKey = (MBOKeybinding *)anObject;
+
+        if (self.keyCode == otherKey.keyCode && self.modifierFlags == otherKey.modifierFlags && self.action == otherKey.action && self.isBound == otherKey.isBound) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+
 #pragma mark NSSecureCoding
 
 + (BOOL)supportsSecureCoding

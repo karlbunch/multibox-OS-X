@@ -7,9 +7,10 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import "MBOKeybinding.h"
 
 @interface MBOKeybindingHeaderView : NSView <NSCollectionViewElement>
 
--(void) setSectionTitle:(NSString *)title;
+-(void)setSectionTitle:(NSString *)title withAction:(kMBOKeybindingAction)action isRecording:(BOOL)isRecording;
 
 @end

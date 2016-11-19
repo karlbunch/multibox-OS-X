@@ -12,6 +12,11 @@
 
 @implementation MBOKeybindingViewItem
 
+-(void)prepareForReuse {
+    [self.shortcutView setShortcutValueChange:NULL];
+    [self.shortcutView setShortcutValue:NULL];
+}
+
 -(void)setRepresentedObject:(id)representedObject {
     [super setRepresentedObject:representedObject];
 
@@ -19,9 +24,6 @@
         MBOKeybinding *originalKey = (MBOKeybinding *)representedObject;
         kMBOKeybindingAction thisAction = originalKey.action;
 
-        // Watch out for view reuse, reset prior settings
-        [self.shortcutView setShortcutValueChange:NULL];
-        [self.shortcutView setShortcutValue:NULL];
         [self.shortcutView setShortcutValidator:[MBOShortcutValidator sharedValidator]];
 
         if (originalKey.isBound) {
@@ -30,7 +32,6 @@
 
         [self.shortcutView setShortcutValueChange:^(MASShortcutView *sender) {
             MainController *mainController = (MainController *)[[NSApplication sharedApplication] delegate];
-            NSMapTable *newBindings = [mainController.keyBindings copy];
             MASShortcut *shortCut = sender.shortcutValue;
 
             if (shortCut != nil) {
@@ -42,16 +43,14 @@
                     MBOKeybinding *newKey = [MBOKeybinding shortcutWithKeyCode:shortCut.keyCode modifierFlags:modifierFlags bindingAction:thisAction];
                     NSLog(@"keyBinding Changed: %@ => %@", originalKey.debugDescription, newKey.debugDescription);
                     if (originalKey.isBound) {
-                        [newBindings removeObjectForKey:@(originalKey.keyCode)];
+                        [mainController removeKeyBinding:originalKey];
                     }
-                    [newBindings setObject:newKey forKey:@(newKey.keyCode)];
+                    [mainController addKeyBinding:newKey];
                 }
             } else {
                 NSLog(@"keyBinding Deleted: %@", originalKey.debugDescription);
-                [newBindings removeObjectForKey:@(originalKey.keyCode)];
+                [mainController removeKeyBinding:originalKey];
             }
-
-            [mainController setKeyBindings:newBindings];
         }];
     }
 }
