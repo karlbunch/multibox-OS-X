@@ -77,7 +77,6 @@ typedef struct {
     NSDictionary *defaultPreferences =
     @{
       kMBO_Preference_Version: @"",
-      kMBO_Preference_TargetApplication: @"World of Warcraft",
       kMBO_Preference_TargetAppPath: @"/Applications/World of Warcraft/World of Warcraft.app",
       kMBO_Preference_FavoriteLayout: @[ ],
       kMBO_Preference_KeyBindings: [NSKeyedArchiver archivedDataWithRootObject:defaultKeyBindings],
@@ -181,20 +180,21 @@ typedef struct {
     preferencesWindow = NULL;
 }
 
--(NSString *)targetApplication {
-    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetApplication];
-}
-
--(void)setTargetApplication:(NSString *)targetApplication {
-    [[NSUserDefaults standardUserDefaults] setValue:targetApplication forKey:kMBO_Preference_TargetApplication];
-}
-
 -(NSString *)targetAppPath {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetAppPath];
 }
 
 -(void)setTargetAppPath:(NSString *)targetAppPath {
     [[NSUserDefaults standardUserDefaults] setValue:targetAppPath forKey:kMBO_Preference_TargetAppPath];
+}
+
+-(nullable NSString *)targetBundleIdentifier {
+    NSString *targetAppPath = [[NSWorkspace sharedWorkspace] fullPathForApplication:self.targetAppPath];
+    
+    if (targetAppPath == nil)
+        return nil;
+    
+    return [[NSBundle bundleWithPath:targetAppPath] bundleIdentifier];
 }
 
 -(NSArray *)favoriteLayout {
@@ -378,13 +378,15 @@ typedef struct {
 }
 
 - (void)processAppplicationNotifications:(NSNotification *)notification {
-    if (![[[notification userInfo] objectForKey:@"NSApplicationName"] isEqualToString:self.targetApplication]) {
+    NSRunningApplication *thisApp = [[notification userInfo] objectForKey:@"NSWorkspaceApplicationKey"];
+    
+    if (![thisApp.bundleIdentifier isEqualToString:self.targetBundleIdentifier]) {
         return;
     }
 
     NSString *notificationName = [notification name];
 
-    pid_t thisPID = (pid_t)[[[notification userInfo] objectForKey:@"NSApplicationProcessIdentifier"] integerValue];
+    pid_t thisPID = [thisApp processIdentifier];
 
     NSLog(@"processAppplicationNotifications() pid: %u %@:\n%@", thisPID, notificationName, notification);
 
@@ -418,22 +420,20 @@ typedef struct {
 }
 
 - (void)scanForTargetApplications {
-    NSArray *appNames = [[NSWorkspace sharedWorkspace] runningApplications];
+    NSArray *appList = [NSRunningApplication runningApplicationsWithBundleIdentifier:self.targetBundleIdentifier];
 
 #if DEBUG
     NSDate *startTime = [NSDate date];
 #endif // DEBUG
 
-    for (NSRunningApplication *thisApp in appNames) {
-        if ([thisApp.localizedName isEqualToString:self.targetApplication]) {
-            pid_t thisPID = [thisApp processIdentifier];
+    for (NSRunningApplication *thisApp in appList) {
+        pid_t thisPID = [thisApp processIdentifier];
 
-            NSLog(@"scanForTargetApplications(): Found Target: pid = %u", thisPID);
+        NSLog(@"scanForTargetApplications(): Found Target: pid = %u", thisPID);
 
-            [self setupTargetApplicationWithPID:thisPID];
+        [self setupTargetApplicationWithPID:thisPID];
 
-            autoExit = TRUE;
-        }
+        autoExit = TRUE;
     }
 
 #if DEBUG
@@ -454,14 +454,14 @@ typedef struct {
 #endif // MULTIBOXOSX_LOGKEYS
     NSRunningApplication *frontmostApp = [[NSWorkspace sharedWorkspace] frontmostApplication];
 
-    if (![frontmostApp.localizedName isEqualToString:self.targetApplication]) {
+    if (![frontmostApp.bundleIdentifier isEqualToString:self.targetBundleIdentifier]) {
         return event;
     }
 
     CGKeyCode keycode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
 
 #if MULTIBOXOSX_LOGKEYS
-    NSLog(@"tapKeyboardCallbackWithProxy(type:%u, event:%@): currentApp=[%@]", eventType, event, currentAppName);
+    NSLog(@"tapKeyboardCallbackWithProxy(type:%u, event:%@): frontmostApp=[%@]", eventType, event, frontmostApp.bundleIdentifier);
 #endif // MULTIBOXOSX_LOGKEYS
     // check for special keys and ignored keys
     if (eventType == kCGEventKeyDown || eventType == kCGEventKeyUp) {
@@ -781,7 +781,7 @@ CGEventRef MyKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType type, 
             toggleButton.title = @"Disable MultiBoxOSX";
             mainWindow.backgroundColor = [NSColor greenColor];
         } else {
-            toggleButton.title = [NSString stringWithFormat:@"Start %@", self.targetApplication];
+            toggleButton.title = @"Launch";
             mainWindow.backgroundColor = [NSColor yellowColor];
         }
     }

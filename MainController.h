@@ -28,8 +28,8 @@
 #import "MBOPreferencesWindowController.h"
 
 @interface MainController : NSObject <NSApplicationDelegate>
-@property (nonatomic, weak) NSString *targetApplication;
 @property (nonatomic, weak) NSString *targetAppPath;
+@property (nonatomic, weak) NSString *targetBundleIdentifier;
 @property (nonatomic, weak) NSArray *favoriteLayout;
 @property (nonatomic, weak) NSDictionary *keyBindingsDictionaryRepresentation;
 

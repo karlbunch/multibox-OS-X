@@ -259,14 +259,6 @@ CGEventRef RecordKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType ty
     return NSZeroSize;
 }
 
-- (NSString *)targetApplication {
-    return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetApplication];
-}
-
-- (void) setTargetApplication:(NSString *)targetApplication {
-    [[NSUserDefaults standardUserDefaults] setValue:targetApplication forKey:kMBO_Preference_TargetApplication];
-}
-
 - (NSString *)targetAppPath {
     return [[[NSUserDefaultsController sharedUserDefaultsController] values] valueForKey:kMBO_Preference_TargetAppPath];
 }
@@ -318,7 +310,7 @@ CGEventRef RecordKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType ty
     NSString *bundleName = [targetInfo objectForKey:@"CFBundleName"];
 
     if (bundleName && [bundleName length] > 0) {
-        self.targetApplication = bundleName;
+        // self.targetApplication = bundleName;
         [_targetAppVersionTextField setStringValue:[targetInfo objectForKey:@"CFBundleShortVersionString"]];
     }
 }
