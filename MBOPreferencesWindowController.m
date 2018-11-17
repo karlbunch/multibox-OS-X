@@ -310,7 +310,6 @@ CGEventRef RecordKeyboardEventTapCallBack (CGEventTapProxy proxy, CGEventType ty
     NSString *bundleName = [targetInfo objectForKey:@"CFBundleName"];
 
     if (bundleName && [bundleName length] > 0) {
-        // self.targetApplication = bundleName;
         [_targetAppVersionTextField setStringValue:[targetInfo objectForKey:@"CFBundleShortVersionString"]];
     }
 }
