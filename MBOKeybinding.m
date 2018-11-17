@@ -60,6 +60,15 @@ static NSString *MBOKeybindingBound = @"Bound";
     }
 }
 
+-(NSDictionary *)toDictionary {
+    return [NSDictionary dictionaryWithObjectsAndKeys:
+            @(self.keyCode), @"keyCode",
+            @(self.modifierFlags), @"modifierFlags",
+            [MBOKeybinding NSStringWithMBOKeybindingAction:self.action], @"action",
+            @(self.isBound), @"isBound",
+            nil];
+}
+
 +(NSString *)NSStringWithMBOKeybindingAction:(kMBOKeybindingAction)action {
     switch (action) {
         case kMBOKeybindingActionForward: return @"Forward";

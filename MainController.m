@@ -45,6 +45,7 @@ typedef struct {
     BOOL autoExit;
     NSInteger numPendingLaunch;
     NSMutableDictionary *targetApplicationsByPID;
+    NSArray *_preferencesKeys;
 }
 
 #if DEBUG
@@ -65,7 +66,7 @@ typedef struct {
     // Setup Defaults
     NSMapTable *defaultKeyBindings = [NSMapTable strongToStrongObjectsMapTable];
 
-    for(NSNumber *keyCode in @[ @50, @13, @0, @1, @2]) {
+    for(NSNumber *keyCode in @[ @49, @50, @13, @0, @1, @2]) {
         MBOKeybinding *key = [MBOKeybinding shortcutWithKeyCode:[keyCode unsignedIntegerValue] modifierFlags:0 bindingAction:kMBOKeybindingActionIgnore];
 
         [defaultKeyBindings setObject:key forKey:keyCode];
@@ -81,6 +82,8 @@ typedef struct {
       kMBO_Preference_FavoriteLayout: @[ ],
       kMBO_Preference_KeyBindings: [NSKeyedArchiver archivedDataWithRootObject:defaultKeyBindings],
     };
+
+    _preferencesKeys = [defaultPreferences allKeys];
 
     [[NSUserDefaults standardUserDefaults] registerDefaults:defaultPreferences];
     [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:defaultPreferences];
@@ -140,6 +143,38 @@ typedef struct {
 
     preferencesWindow = [[MBOPreferencesWindowController alloc] initWithController:self];
     [preferencesWindow showWindow:self];
+}
+
+- (IBAction)menuActionImportSettings:(id)sender {
+}
+
+- (IBAction)menuActionExportSettings:(id)sender {
+    NSLog(@"export Settings");
+
+    NSMutableDictionary *exportDict = [[NSMutableDictionary alloc] init];
+    NSDictionary *defaultsDict = [[[NSUserDefaults standardUserDefaults] dictionaryRepresentation] mutableCopy];
+
+    for(NSString *key in _preferencesKeys) {
+        if (![key isEqualToString:kMBO_Preference_KeyBindings]) {
+            [exportDict setObject:defaultsDict[key] forKey:key];
+        }
+    }
+
+    NSDictionary *currentBindings = [self keyBindingsDictionaryRepresentation];
+    NSMutableArray *keys = [[NSMutableArray alloc] init];
+
+    for (id idx in currentBindings) {
+        MBOKeybinding *key = [currentBindings objectForKey:idx];
+        [keys addObject:[key toDictionary]];
+    }
+
+    [exportDict setObject:keys forKey:kMBO_Preference_KeyBindings];
+
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:exportDict options:NSJSONWritingPrettyPrinted error:nil];
+
+    NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
+    NSLog(@"export=%@", jsonString);
 }
 
 -(void)preferencesWindowWillClose:(id)sender {

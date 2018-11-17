@@ -36,6 +36,8 @@
 - (IBAction)enableButtonClicked:(id)sender;
 - (IBAction)levelIndicatorClicked:(id)sender;
 - (IBAction)menuActionPreferences:(id)sender;
+- (IBAction)menuActionImportSettings:(id)sender;
+- (IBAction)menuActionExportSettings:(id)sender;
 -(void)preferencesWindowWillClose:(id)sender;
 -(void)addKeyBinding:(MBOKeybinding *)newKey;
 -(void)removeKeyBinding:(MBOKeybinding *)originalKey;

@@ -21,6 +21,7 @@ typedef NS_ENUM(unsigned short, kMBOKeybindingAction) {
 @property (nonatomic) BOOL isBound;
 
 -(NSString *)debugDescription;
+-(NSDictionary *)toDictionary;
 -(instancetype)initWithKeyCode:(NSUInteger)code modifierFlags:(NSUInteger)flags bindingAction:(kMBOKeybindingAction)action;
 -(instancetype)initWithAction:(kMBOKeybindingAction)action;
 
